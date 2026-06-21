@@ -1,11 +1,12 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace RhAImers.Input
 {
     /// <summary>
     /// ライム入力を管理するクラス
     /// </summary>
-    public class RhymeInputController
+    public class RhymeInputController : MonoBehaviour
     {
         /// <summary>入力されたライム</summary>
         private readonly List<string> _rhymes = new();

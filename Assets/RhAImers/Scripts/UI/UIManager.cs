@@ -1,8 +1,9 @@
 using RhAImers.Battle;
+using UnityEngine;
 
 namespace RhAImers.UI
 {
-    public class UIManager
+    public class UIManager : MonoBehaviour
     {
         // TODO: 全てのUI系処理の実装が必要
         public void ShowTitle() { }

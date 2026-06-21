@@ -1,18 +1,24 @@
 using System.Collections.Generic;
 using RhAImers.Battle;
+using RhAImers.Input;
 using RhAImers.Scoring;
+using RhAImers.UI;
 using RhAImers.VerseGeneration;
+using UnityEngine;
 
 namespace RhAImers.Core
 {
     /// <summary>
     /// ゲーム全体を管理するクラス
     /// </summary>
-    public class GameManager
+    public class GameManager : MonoBehaviour
     {
         private BattleSession _currentSession;
         private IVerseGenerationService _verseGenerationService;
         private ScoreCalculator _scoreCalculator;
+
+        [SerializeField] private RhymeInputController _rhymeInputController;
+        [SerializeField] private UIManager _uiManager;
 
         public GameState CurrentState { get; private set; }
         public Verse CurrentOpponentVerse { get; private set; }
