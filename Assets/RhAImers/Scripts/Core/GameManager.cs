@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Codice.Client.Common.GameUI;
+using System.Collections;
 using RhAImers.Battle;
 using RhAImers.Input;
 using RhAImers.Scoring;
@@ -27,6 +27,10 @@ namespace RhAImers.Core
 
         [SerializeField] private RhymeInputController _rhymeInputController;
         [SerializeField] private UIManager _uiManager;
+        [SerializeField] private int _defaultInputTimeLimitSec = 30;
+
+        private Coroutine _inputTimerCoroutine;
+        private bool _hasSubmittedCurrentTurn;
 
         public GameState CurrentState { get; private set; }
         public Verse CurrentOpponentVerse { get; private set; }
@@ -82,24 +86,49 @@ namespace RhAImers.Core
         public void StartTurn()
         {
             // 相手バースの生成
-            _currentContext = _currentSession.GenerateBattleContext();                                  // バトルコンテキストの生成
             CurrentState = GameState.OpponentVerse;                                                     // ゲーム状態を「相手バース生成中」に変更
+            _uiManager?.ShowOpponentVerseLoading();
+            _currentContext = _currentSession.GenerateBattleContext();                                  // バトルコンテキストの生成
             CurrentOpponentVerse = _verseGenerationService.GenerateOpponentVerse(_currentContext);      // 相手バースを生成する
             _uiManager.ShowOpponentVerse(CurrentOpponentVerse);                                         // 相手バースを表示
 
             // ライムの入力受付開始
+            CurrentState = GameState.RhymeInput;                                                        // ゲーム状態を「ライム入力中」に変更
+            _hasSubmittedCurrentTurn = false;
             _uiManager.ShowInputTimer(CurrentSettings.InputTimeLimitSec);                               // ライム入力タイマーを表示
             _remainRhymeInputTimeMs = CurrentSettings.InputTimeLimitSec * 1000;                         // ライム入力残り時間を初期化
             _rhymeInputController.StartInput();                                                         // ライムの入力受付開始
-            CurrentState = GameState.RhymeInput;                                                        // ゲーム状態を「ライム入力中」に変更
         }
 
         public void SubmitRhymes(IReadOnlyList<string> rhymes)
         {
+            if (_hasSubmittedCurrentTurn)
+            {
+                return;
+            }
+
+            _hasSubmittedCurrentTurn = true;
+            StopInputTimer();
+
+            _uiManager?.ShowGenerationLoading();
+
             CurrentState = GameState.RhymeInput;
-            var playerVerse = _verseGenerationService.GeneratePlayerVerse(rhymes, CurrentOpponentVerse.Text);
-            var turnData = new TurnData(_currentSession.CurrentTurnIndex, CurrentOpponentVerse, new List<string>(rhymes), playerVerse);
+
+            var playerVerse = _verseGenerationService.GeneratePlayerVerse(
+                rhymes,
+                CurrentOpponentVerse.Text
+            );
+
+            var turnData = new TurnData(
+                _currentSession.CurrentTurnIndex,
+                CurrentOpponentVerse,
+                new List<string>(rhymes),
+                playerVerse
+            );
+
             _currentSession.AddTurn(turnData);
+
+            _uiManager?.ShowGeneratedVerse(playerVerse);
         }
 
         public void EndTurn()
@@ -153,5 +182,48 @@ namespace RhAImers.Core
             }
         }
         #endregion (Updateメソッド内の処理)
+
+        private void StartInputTimer(int sec)
+        {
+            StopInputTimer();
+            _inputTimerCoroutine = StartCoroutine(InputTimerCoroutine(sec));
+        }
+
+        private void StopInputTimer()
+        {
+            if (_inputTimerCoroutine == null)
+            {
+                return;
+            }
+
+            StopCoroutine(_inputTimerCoroutine);
+            _inputTimerCoroutine = null;
+        }
+
+        private IEnumerator InputTimerCoroutine(int sec)
+        {
+            int remainingSec = Mathf.Max(0, sec);
+
+            _uiManager?.ShowInputTimer(remainingSec);
+
+            while (remainingSec > 0 && !_hasSubmittedCurrentTurn)
+            {
+                yield return new WaitForSeconds(1f);
+
+                remainingSec--;
+                _uiManager?.UpdateInputTimer(remainingSec);
+            }
+
+            if (_hasSubmittedCurrentTurn)
+            {
+                yield break;
+            }
+
+            IReadOnlyList<string> rhymes = _rhymeInputController != null
+                ? _rhymeInputController.Submit()
+                : new List<string>();
+
+            SubmitRhymes(rhymes);
+        }
     }
 }
