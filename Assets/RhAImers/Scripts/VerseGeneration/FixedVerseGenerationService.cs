@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using RhAImers.Battle;
 
 namespace RhAImers.VerseGeneration
@@ -10,14 +12,13 @@ namespace RhAImers.VerseGeneration
     /// </summary>
     public class FixedVerseGenerationService : IVerseGenerationService
     {
-        private static readonly string[] PresetOpponentVerses =
-        [
+        private static readonly string[] PresetOpponentVerses = new string[] {
             "俺のリズムは止まらない 熱い血が沸き立つ\nマイクを握る手に力 世界が変わる瞬間",
             "言葉の刃で斬り裂く 暗闇を照らす光\nビートに乗せた魂 誰も止められない炎",
             "街の角で磨いた技 今こそ見せる時が来た\nリズムと韻が織りなす 俺だけの物語を聞け",
             "挑むなら覚悟しろ ここは俺の舞台だ\n一歩も引かぬ意地 勝利を掴みに行く",
             "言葉は弾丸よりも鋭い 心を貫く詩の力\nお前には見えているか この先に続く道が",
-        ];
+        };
 
         public Verse GenerateOpponentVerse(BattleContext context)
         {
@@ -57,6 +58,26 @@ namespace RhAImers.VerseGeneration
             }
 
             return highlights;
+        }
+
+        public UniTask<string> GenerateOpponentVerseAsync(string context, CancellationToken? ct = null)
+        {
+            throw new NotImplementedException();
+        }
+
+        public UniTask<string> GeneratePlayerVerseAsync(IReadOnlyList<string> rhymeWords, string opponentVerse, CancellationToken? ct = null)
+        {
+            throw new NotImplementedException(); 
+        }
+
+        public UniTask<string> GenerateOpponentVerseAsync(string context, CancellationToken ct = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public UniTask<string> GeneratePlayerVerseAsync(IReadOnlyList<string> rhymeWords, string opponentVerse, CancellationToken ct = default)
+        {
+            throw new NotImplementedException();
         }
     }
 }

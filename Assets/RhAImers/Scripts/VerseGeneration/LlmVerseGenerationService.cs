@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using RhAImers.Battle;
 
 namespace RhAImers.VerseGeneration
@@ -56,6 +58,26 @@ namespace RhAImers.VerseGeneration
             }
 
             return highlights;
+        }
+
+        public UniTask<string> GenerateOpponentVerseAsync(string context, CancellationToken ct = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public UniTask<string> GeneratePlayerVerseAsync(IReadOnlyList<string> rhymeWords, string opponentVerse, CancellationToken ct = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        UniTask<string> IVerseGenerationService.GenerateOpponentVerseAsync(string context, CancellationToken ct)
+        {
+            throw new NotImplementedException();
+        }
+
+        UniTask<string> IVerseGenerationService.GeneratePlayerVerseAsync(IReadOnlyList<string> rhymeWords, string opponentVerse, CancellationToken ct)
+        {
+            throw new NotImplementedException();
         }
     }
 }

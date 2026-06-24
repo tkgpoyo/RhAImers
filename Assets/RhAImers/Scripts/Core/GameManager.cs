@@ -39,8 +39,12 @@ namespace RhAImers.Core
         private void Awake()
         {
             _verseGenerationService = new FixedVerseGenerationService();
-            _scoreCalculator = new ScoreCalculator(new(new()), new(new(), new(new RhymeDictionary(new()))));        // TODO: 仮実装のためちゃんと実装
+            _scoreCalculator = new ScoreCalculator(new(new()), new(new(LlmClient.API_KEY_SAMPLE), new(new RhymeDictionary(new()))));        // TODO: 仮実装のためちゃんと実装
             CurrentState = GameState.Title;
+
+            // TODO: 仮動作用
+            CurrentSettings = new BattleSettings(3, _defaultInputTimeLimitSec, Difficulty.Normal);
+            StartBattle(CurrentSettings);
         }
 
         private void Update()
@@ -51,6 +55,8 @@ namespace RhAImers.Core
                 case GameState.ModeSelect:
                     break;
                 case GameState.BattleStart:
+                    // TODO: 仮動作用
+                    StartTurn();
                     break;
                 case GameState.OpponentVerse:
                     UpdateOpponentVerse();

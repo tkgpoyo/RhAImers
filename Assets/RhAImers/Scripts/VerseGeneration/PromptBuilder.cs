@@ -92,7 +92,7 @@ $@"以下の韻語候補の中から、相手のバースに最もよく呼応�
         {
             var keys = _rhymeDictionary.GetKeys();
             if (keys == null || keys.Count == 0) return string.Empty;
-            return keys[Random.Range(0, keys.Count)];
+            return keys[UnityEngine.Random.Range(0, keys.Count)];
         }
 
         private static string DescribePreviousTurns(IReadOnlyList<TurnData> previousTurns)

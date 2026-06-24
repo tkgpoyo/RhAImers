@@ -12,6 +12,7 @@ namespace RhAImers.VerseGeneration
     /// </summary>
     public class LlmClient
     {
+        public const string API_KEY_SAMPLE = "YOUR_API_KEY_HERE";
         private static readonly HttpClient Http = new HttpClient();
 
         private const string EndpointTemplate =
