@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections;
 using RhAImers.Battle;
@@ -15,8 +16,14 @@ namespace RhAImers.Core
     public class GameManager : MonoBehaviour
     {
         private BattleSession _currentSession;
+        /// <summary>今のターンのバトルコンテキスト</summary>
+        private BattleContext _currentContext;
         private IVerseGenerationService _verseGenerationService;
         private ScoreCalculator _scoreCalculator;
+        /// <summary>ライム入力残り時間(msec)</summary>
+        private float _remainRhymeInputTimeMs;
+        /// <summary>入力されたライムのリスト</summary>
+        private IReadOnlyList<string> _submittedRhymes;
 
         [SerializeField] private RhymeInputController _rhymeInputController;
         [SerializeField] private UIManager _uiManager;
@@ -29,11 +36,39 @@ namespace RhAImers.Core
         public Verse CurrentOpponentVerse { get; private set; }
         public BattleSettings CurrentSettings { get; private set; }
 
-        public GameManager(IVerseGenerationService verseGenerationService, ScoreCalculator scoreCalculator)
+        private void Awake()
         {
-            _verseGenerationService = verseGenerationService;
-            _scoreCalculator = scoreCalculator;
+            _verseGenerationService = new FixedVerseGenerationService();
+            _scoreCalculator = new ScoreCalculator(new(new()), new(new(), new(new RhymeDictionary(new()))));        // TODO: 仮実装のためちゃんと実装
             CurrentState = GameState.Title;
+        }
+
+        private void Update()
+        {
+            switch (CurrentState) {
+                case GameState.Title:
+                    break;
+                case GameState.ModeSelect:
+                    break;
+                case GameState.BattleStart:
+                    break;
+                case GameState.OpponentVerse:
+                    UpdateOpponentVerse();
+                    break;
+                case GameState.RhymeInput:
+                    UpdateRhymeInput();
+                    break;
+                case GameState.VerseGeneration:
+                    UpdateVerseGeneration();
+                    break;
+                case GameState.TurnEnd:
+                    UpdateTurnEnd();
+                    break;
+                case GameState.Scoring:
+                    break;
+                case GameState.Result:
+                    break;
+            }
         }
 
         public void StartGame()
@@ -50,21 +85,19 @@ namespace RhAImers.Core
 
         public void StartTurn()
         {
-            CurrentState = GameState.OpponentVerse;
-
+            // 相手バースの生成
+            CurrentState = GameState.OpponentVerse;                                                     // ゲーム状態を「相手バース生成中」に変更
             _uiManager?.ShowOpponentVerseLoading();
+            _currentContext = _currentSession.GenerateBattleContext();                                  // バトルコンテキストの生成
+            CurrentOpponentVerse = _verseGenerationService.GenerateOpponentVerse(_currentContext);      // 相手バースを生成する
+            _uiManager.ShowOpponentVerse(CurrentOpponentVerse);                                         // 相手バースを表示
 
-            CurrentOpponentVerse = _verseGenerationService.GenerateOpponentVerse(
-                _currentSession.GenerateBattleContext()
-            );
-
-            _uiManager?.ShowOpponentVerse(CurrentOpponentVerse);
-
-            CurrentState = GameState.RhymeInput;
+            // ライムの入力受付開始
+            CurrentState = GameState.RhymeInput;                                                        // ゲーム状態を「ライム入力中」に変更
             _hasSubmittedCurrentTurn = false;
-
-            _rhymeInputController?.StartInput();
-            StartInputTimer(_defaultInputTimeLimitSec);
+            _uiManager.ShowInputTimer(CurrentSettings.InputTimeLimitSec);                               // ライム入力タイマーを表示
+            _remainRhymeInputTimeMs = CurrentSettings.InputTimeLimitSec * 1000;                         // ライム入力残り時間を初期化
+            _rhymeInputController.StartInput();                                                         // ライムの入力受付開始
         }
 
         public void SubmitRhymes(IReadOnlyList<string> rhymes)
@@ -100,12 +133,10 @@ namespace RhAImers.Core
 
         public void EndTurn()
         {
-            if (_currentSession.IsFinalTurn())
-            {
+            if (_currentSession.IsFinalTurn()) {
                 CurrentState = GameState.Result;
             }
-            else
-            {
+            else {
                 CurrentState = GameState.TurnEnd;
             }
         }
@@ -115,23 +146,42 @@ namespace RhAImers.Core
             CurrentState = GameState.Result;
         }
 
-        private void OnEnable()
+        #region Updateメソッド内の処理
+        private void UpdateOpponentVerse()
         {
-            if (_rhymeInputController != null)
-            {
-                _rhymeInputController.Submitted += SubmitRhymes;
+            // 相手バースの生成が完了したら，ライム入力受付に移行する
+            CurrentState = GameState.RhymeInput;
+        }
+        private void UpdateRhymeInput()
+        {
+            _remainRhymeInputTimeMs -= Time.deltaTime * 1000;
+            if (_remainRhymeInputTimeMs <= 0) {
+                _submittedRhymes = _rhymeInputController.Submit();
+                CurrentState = GameState.VerseGeneration;
             }
         }
-
-        private void OnDisable()
+        private void UpdateVerseGeneration()
         {
-            if (_rhymeInputController != null)
-            {
-                _rhymeInputController.Submitted -= SubmitRhymes;
-            }
-
-            StopInputTimer();
+            var playerVerse = _verseGenerationService.GeneratePlayerVerse(_submittedRhymes, CurrentOpponentVerse.Text);
+            var turnData = new TurnData(_currentSession.CurrentTurnIndex, CurrentOpponentVerse, new List<string>(_submittedRhymes), playerVerse);
+            _currentSession.AddTurn(turnData);
+            _uiManager.ShowGeneratedVerse(playerVerse);
+            CurrentState = GameState.TurnEnd;
         }
+        private void UpdateTurnEnd()
+        {
+            if (_currentSession.IsFinalTurn()) {
+                CurrentState = GameState.Result;
+            }
+            else {
+                _uiManager.ShowScoringLoading();
+                var scores = _scoreCalculator.Calculate(_currentSession.Turns);
+                var result = new BattleResult(_currentSession.Turns, scores);
+                _uiManager.ShowResult(result);
+                CurrentState = GameState.OpponentVerse;
+            }
+        }
+        #endregion (Updateメソッド内の処理)
 
         private void StartInputTimer(int sec)
         {
