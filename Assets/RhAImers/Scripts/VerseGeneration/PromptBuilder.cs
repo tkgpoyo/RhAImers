@@ -6,7 +6,6 @@ using UnityEngine;
 
 namespace RhAImers.VerseGeneration
 {
-    // TODO: 全てのプロンプトはAIが勝手に作成したものだから，多分良くない．いい感じにプロンプトを変えてください
     public class PromptBuilder
     {
         private readonly IRhymeDictionary _rhymeDictionary;
@@ -16,75 +15,95 @@ namespace RhAImers.VerseGeneration
             _rhymeDictionary = rhymeDictionary ?? throw new ArgumentNullException(nameof(rhymeDictionary));
         }
 
+        /// <summary>
+        /// Builds a prompt that makes the LLM generate an opponent (AI) verse.
+        /// The verse should challenge the player and use the supplied rhyme words.
+        /// </summary>
         public string BuildOpponentVersePrompt(BattleContext context)
         {
-            var rhymeKey = SelectRhymeKey(context);
-            var words = _rhymeDictionary.GetRandomWords(rhymeKey, 4);
-            var wordList = words.Any() ? string.Join("、", words) : "(辞書から韻語を取得できませんでした)";
+            var rhymeKey = SelectRhymeKey();
+            var words    = _rhymeDictionary.GetRandomWords(rhymeKey, 4);
+            var wordList = words.Any() ? string.Join("・", words) : "(韻語なし)";
 
-            return $@"あなたはラッパーです。
-以下の条件に従って、韻を踏んだ日本語のバースを作成してください。
+            return
+$@"あなたはラップバトルの対戦相手AIです。プレイヤーに挑む短いバース（2〜4行）を日本語で作成してください。
 
-・韻の候補: {wordList}
-・現在のターン: {context.TurnIndex}
+条件:
+- 以下の韻語を積極的に使用すること: {wordList}
+- プレイヤーへの挑発・挑戦を込めた内容にすること
+- 1行あたり14〜20音程度のリズムを意識すること
+- ターン: {context.TurnIndex + 1}
 {DescribePreviousTurns(context.PreviousTurns)}
 
-出力は本文のみとし、余計な説明は書かないでください。";
+バースの本文のみを出力してください。説明・注釈は不要です。";
         }
 
+        /// <summary>
+        /// Builds a prompt that makes the LLM generate a player verse.
+        /// The verse must answer the opponent and rhyme with the player's chosen words.
+        /// </summary>
         public string BuildPlayerVersePrompt(IReadOnlyList<string> rhymes, string opponentVerseText)
         {
             var rhymeHint = rhymes != null && rhymes.Count > 0
-                ? string.Join("、", rhymes)
-                : "(入力された韻語がありません)";
+                ? string.Join("・", rhymes)
+                : "(韻語の指定なし)";
 
-            return $@"あなたはラッパーです。
-以下の条件に従って、相手のバースに続くプレイヤーのバースを生成してください。
+            return
+$@"あなたはラップバトルのAIアシスタントです。プレイヤーの代わりに返しのバース（2〜4行）を日本語で作成してください。
 
-・相手のバース:
+【相手のバース】
 {opponentVerseText}
-・使用する韻語: {rhymeHint}
 
-出力は本文のみとし、余計な説明は含めないでください。";
+【使用する韻語（必須）】
+{rhymeHint}
+
+条件:
+- 上記の韻語をできる限り多く使用し、韻を踏むことを最優先すること
+- 相手のバースへの反撃・返答になる内容にすること
+- 1行あたり14〜20音程度のリズムを意識すること
+
+バースの本文のみを出力してください。説明・注釈は不要です。";
         }
 
+        /// <summary>
+        /// Builds a prompt that asks the LLM to pick which rhyme word fits best
+        /// with the opponent's verse (used for automated word selection).
+        /// </summary>
         public string BuildRelevancePrompt(IReadOnlyList<string> rhymes, string opponentVerseText)
         {
             var rhymeHint = rhymes != null && rhymes.Count > 0
-                ? string.Join("、", rhymes)
-                : "(候補がありません)";
+                ? string.Join("・", rhymes)
+                : "(候補なし)";
 
-            return $@"以下の韻語候補の中から、相手のバースにもっとも関連性が高いものを選んでください。
+            return
+$@"以下の韻語候補の中から、相手のバースに最もよく呼応するものを一つだけ選んでください。
 
-候補: {rhymeHint}
-相手のバース:
+【韻語候補】
+{rhymeHint}
+
+【相手のバース】
 {opponentVerseText}
 
-選択は韻の響きと意味のつながりを重視してください。";
+選ぶ基準: 韻の響きの近さと、バースとの意味的なつながりの強さ。
+選んだ韻語のみを出力してください。";
         }
 
-        private string SelectRhymeKey(BattleContext context)
+        private string SelectRhymeKey()
         {
             var keys = _rhymeDictionary.GetKeys();
-            if (keys == null || keys.Count == 0)
-            {
-                return string.Empty;
-            }
-
-            var index = UnityEngine.Random.Range(0, keys.Count);
-            return keys[index];
+            if (keys == null || keys.Count == 0) return string.Empty;
+            return keys[Random.Range(0, keys.Count)];
         }
 
-        private string DescribePreviousTurns(IReadOnlyList<TurnData> previousTurns)
+        private static string DescribePreviousTurns(IReadOnlyList<TurnData> previousTurns)
         {
             if (previousTurns == null || previousTurns.Count == 0)
-            {
-                return "前のターンはありません。";
-            }
+                return "前のターン: なし";
 
-            var descriptions = previousTurns.Select((turn, index) =>
-                $"ターン{index + 1}: {turn.OpponentVerse.Text} / プレイヤー: {string.Join("、", turn.InputRhymes)}");
-            return string.Join("\n", descriptions);
+            var lines = previousTurns.Select((turn, i) =>
+                $"ターン{i + 1}: 相手「{turn.OpponentVerse.Text}」 / プレイヤー韻語「{string.Join("・", turn.InputRhymes)}」");
+
+            return "前のターン:\n" + string.Join("\n", lines);
         }
     }
 }
