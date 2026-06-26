@@ -1,4 +1,6 @@
 using Cysharp.Threading.Tasks;
+using RhAImers.Battle;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 
@@ -8,7 +10,7 @@ namespace RhAImers.VerseGeneration
     /// Convenience composite interface that covers both verse-generation roles.
     /// Implement this when a single service handles both opponent and player verse generation.
     /// </summary>
-    public interface IVerseGenerationService : IGenerateOpponentVerse, IGeneratePlayerVerse
+    public interface IVerseGenerationService
     {
         /// <summary>
         /// Generates the opponent's next rap verse based on the full battle
@@ -21,8 +23,7 @@ namespace RhAImers.VerseGeneration
         /// </param>
         /// <param name="ct">Optional cancellation token.</param>
         /// <returns>The opponent's new verse as a plain string.</returns>
-        UniTask<string> GenerateOpponentVerseAsync(string context,
-                                                    CancellationToken ct = default);
+        UniTask<Verse> GenerateOpponentVerseAsync(BattleContext context, CancellationToken ct = default);
  
         /// <summary>
         /// Generates the player's rebuttal verse.
@@ -39,8 +40,6 @@ namespace RhAImers.VerseGeneration
         /// </param>
         /// <param name="ct">Optional cancellation token.</param>
         /// <returns>The player's rebuttal verse as a plain string.</returns>
-        UniTask<string> GeneratePlayerVerseAsync(IReadOnlyList<string> rhymeWords,
-                                                  string opponentVerse,
-                                                  CancellationToken ct = default);
+        UniTask<Verse> GeneratePlayerVerseAsync(IReadOnlyList<string> rhymeWords, string opponentVerseText, CancellationToken ct = default);
     }
 }

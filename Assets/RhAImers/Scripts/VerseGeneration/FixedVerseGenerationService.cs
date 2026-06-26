@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using Cysharp.Threading.Tasks;
 using RhAImers.Battle;
 
@@ -20,64 +21,21 @@ namespace RhAImers.VerseGeneration
             "言葉は弾丸よりも鋭い 心を貫く詩の力\nお前には見えているか この先に続く道が",
         };
 
-        public Verse GenerateOpponentVerse(BattleContext context)
+        public UniTask<Verse> GenerateOpponentVerseAsync(BattleContext context, CancellationToken ct = default)
         {
             var index = context.TurnIndex % PresetOpponentVerses.Length;
-            return new Verse(PresetOpponentVerses[index], Array.Empty<VerseHighlight>());
+            return UniTask.FromResult(new Verse(PresetOpponentVerses[index], Array.Empty<VerseHighlight>()));
         }
 
-        public Verse GeneratePlayerVerse(IReadOnlyList<string> rhymes, string opponentVerseText)
+        public UniTask<Verse> GeneratePlayerVerseAsync(IReadOnlyList<string> rhymeWords, string opponentVerseText, CancellationToken ct = default)
         {
-            var rhymeList = rhymes != null && rhymes.Count > 0
-                ? string.Join("と", rhymes)
+            var rhymeList = rhymeWords != null && rhymeWords.Count > 0
+                ? string.Join("と", rhymeWords)
                 : "言葉";
 
             var text = $"{rhymeList}で答える これが俺の返し\nお前のバースを超えていく 終わりなき挑戦を見せろ";
 
-            return new Verse(text, FindRhymeHighlights(text, rhymes));
-        }
-
-        private static IReadOnlyList<VerseHighlight> FindRhymeHighlights(
-            string text, IReadOnlyList<string> rhymes)
-        {
-            var highlights = new List<VerseHighlight>();
-            if (string.IsNullOrEmpty(text) || rhymes == null) return highlights;
-
-            foreach (var rhyme in rhymes)
-            {
-                if (string.IsNullOrEmpty(rhyme)) continue;
-
-                var searchFrom = 0;
-                while (searchFrom < text.Length)
-                {
-                    var idx = text.IndexOf(rhyme, searchFrom, StringComparison.Ordinal);
-                    if (idx < 0) break;
-                    highlights.Add(new VerseHighlight(idx, rhyme.Length));
-                    searchFrom = idx + rhyme.Length;
-                }
-            }
-
-            return highlights;
-        }
-
-        public UniTask<string> GenerateOpponentVerseAsync(string context, CancellationToken? ct = null)
-        {
-            throw new NotImplementedException();
-        }
-
-        public UniTask<string> GeneratePlayerVerseAsync(IReadOnlyList<string> rhymeWords, string opponentVerse, CancellationToken? ct = null)
-        {
-            throw new NotImplementedException(); 
-        }
-
-        public UniTask<string> GenerateOpponentVerseAsync(string context, CancellationToken ct = default)
-        {
-            throw new NotImplementedException();
-        }
-
-        public UniTask<string> GeneratePlayerVerseAsync(IReadOnlyList<string> rhymeWords, string opponentVerse, CancellationToken ct = default)
-        {
-            throw new NotImplementedException();
+            return UniTask.FromResult(new Verse(text, VerseHighlightFinder.Find(text, rhymeWords)));
         }
     }
 }
