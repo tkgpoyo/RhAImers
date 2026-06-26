@@ -46,8 +46,19 @@ namespace RhAImers.Core
             StartGame();
         }
 
+        private void OnEnable()
+        {
+            _rhymeInputController.SubmitRequested += HandleSubmitRequested;
+        }
+
+        private void OnDisable()
+        {
+            _rhymeInputController.SubmitRequested -= HandleSubmitRequested;
+        }
+
         private void Update()
         {
+            // MEMO: あんまり使わないかも？キャンセル処理関連で使うかもしれない
             switch (CurrentState) {
                 case GameState.Title:
                     break;
@@ -106,6 +117,18 @@ namespace RhAImers.Core
         }
         #endregion (UpdateTurnEnd)
         #endregion (Updateメソッド内の処理)
+
+        #region イベント処理
+        /// <summary>
+        /// <see cref="RhymeInputController.SubmitRequested"/>イベントのイベントハンドラ
+        /// </summary>
+        private void HandleSubmitRequested()
+        {
+            if (CurrentState is GameState.RhymeInput) { // ライム入力中の場合
+                _hasSubmittedCurrentTurn = true;        // 提出済みにする
+            }
+        }
+        #endregion (イベント処理)
 
         /// <summary>
         /// ゲームを開始します．

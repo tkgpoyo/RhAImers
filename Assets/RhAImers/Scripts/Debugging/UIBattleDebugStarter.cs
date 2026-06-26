@@ -19,7 +19,7 @@ namespace RhAImers.Debugging
         {
             if (_rhymeInputController != null)
             {
-                _rhymeInputController.Submitted += HandleRhymesSubmitted;
+                _rhymeInputController.SubmitRequested += HandleRhymesSubmitted;
             }
         }
 
@@ -27,12 +27,13 @@ namespace RhAImers.Debugging
         {
             if (_rhymeInputController != null)
             {
-                _rhymeInputController.Submitted -= HandleRhymesSubmitted;
+                _rhymeInputController.SubmitRequested -= HandleRhymesSubmitted;
             }
         }
 
         private void Start()
         {
+            Debug.Log("UIBattleDebugStarterは生きている");
             var opponentVerse = new Verse(
                 "俺のライムが響くこのステージ\n君の言葉で返してみな",
                 new List<VerseHighlight>()
@@ -73,13 +74,14 @@ namespace RhAImers.Debugging
                 _uiManager.UpdateInputTimer(0);
 
                 IReadOnlyList<string> submittedRhymes = _rhymeInputController.Submit();
-                HandleRhymesSubmitted(submittedRhymes);
+                HandleRhymesSubmitted();
             }
         }
 
-        private void HandleRhymesSubmitted(IReadOnlyList<string> rhymes)
+        private void HandleRhymesSubmitted()
         {
             _isTimerRunning = false;
+            var rhymes = _rhymeInputController.Submit();
 
             string joinedRhymes = rhymes == null || rhymes.Count == 0
                 ? "ライム未入力"

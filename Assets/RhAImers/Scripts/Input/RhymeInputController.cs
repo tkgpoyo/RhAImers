@@ -22,7 +22,8 @@ namespace RhAImers.Input
         /// <summary>入力を受け付けるかどうか</summary>
         private bool _allowInput;
 
-        public event Action<IReadOnlyList<string>> Submitted;
+        /// <summary>提出完了時のイベント</summary>
+        public event Action SubmitRequested;
 
         public IReadOnlyList<string> Rhymes => _rhymes.AsReadOnly();
 
@@ -43,7 +44,7 @@ namespace RhAImers.Input
 
             if (_submitButton != null)
             {
-                _submitButton.onClick.AddListener(SubmitInput);
+                _submitButton.onClick.AddListener(RequestSubmit);
             }
         }
 
@@ -56,7 +57,7 @@ namespace RhAImers.Input
 
             if (_submitButton != null)
             {
-                _submitButton.onClick.RemoveListener(SubmitInput);
+                _submitButton.onClick.RemoveListener(RequestSubmit);
             }
         }
 
@@ -148,7 +149,7 @@ namespace RhAImers.Input
         /// <summary>
         /// 現在の入力内容を提出します。
         /// </summary>
-        public void SubmitInput()
+        private void RequestSubmit()
         {
             if (!_allowInput)
             {
@@ -157,8 +158,7 @@ namespace RhAImers.Input
 
             AddCurrentInputText();
 
-            IReadOnlyList<string> submittedRhymes = Submit();
-            Submitted?.Invoke(submittedRhymes);
+            SubmitRequested?.Invoke();
         }
 
         private void AddCurrentInputText()

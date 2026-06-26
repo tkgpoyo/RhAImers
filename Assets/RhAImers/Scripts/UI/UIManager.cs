@@ -19,7 +19,7 @@ namespace RhAImers.UI
 
         /// ADD 2026/06/26 yota リトライ機能実装のため
         /// <summary>リトライボタンが選択されたときのイベント</summary>
-        public event Action OnRetrySelected;
+        public event Action RetrySelected;
 
         public void ShowTitle()
         {
