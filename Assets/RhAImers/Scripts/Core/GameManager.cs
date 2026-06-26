@@ -21,15 +21,10 @@ namespace RhAImers.Core
         /// <remarks>TODO: 将来的に削除する</remarks>
         private const int MAX_TURN = 3;
 
-        private BattleSession _currentSession;
-        /// <summary>今のターンのバトルコンテキスト</summary>
-        private BattleContext _currentContext;
+        /// <summary>バース生成を行うサービス</summary>
         private IVerseGenerationService _verseGenerationService;
+        /// <summary>得点計算を行うクラス</summary>
         private ScoreCalculator _scoreCalculator;
-        /// <summary>ライム入力残り時間(msec)</summary>
-        private float _remainRhymeInputTimeMs;
-        /// <summary>入力されたライムのリスト</summary>
-        private IReadOnlyList<string> _submittedRhymes;
         /// <summary>入力タイマーのキャンセルトークンソース</summary>
         private CancellationTokenSource _cancellationTokenSource = new();
 
@@ -130,24 +125,25 @@ namespace RhAImers.Core
         {
             // バトル開始
             CurrentState = GameState.BattleStart;
-            _currentSession = new BattleSession(MAX_TURN);                                              // バトルセッションの生成 TODO: MaxTurnを設定から取得するようにする
+            var currentSession = new BattleSession(MAX_TURN);                                           // バトルセッションの生成 TODO: MaxTurnを設定から取得するようにする
 
             for (int turn = 0; turn < settings.MaxTurn; turn++) {
                 // セットアップ
-                _currentContext = _currentSession.GenerateBattleContext();                              // バトルコンテキストの生成
+                var currentContext = currentSession.GenerateBattleContext();                            // バトルコンテキストの生成
 
                 // 相手バース生成
                 CurrentState = GameState.OpponentVerse;                                                 // ゲーム状態を「相手バース生成中」に変更
                 _uiManager.ShowOpponentVerseLoading();                                                  // 相手バース生成中のUI表示
                 var opponentVerse = await _verseGenerationService.GenerateOpponentVerseAsync(
-                    _currentContext, 
+                    currentContext, 
                     _cancellationTokenSource.Token
                 );                                                                                      // 相手バースの取得
                 _uiManager.ShowOpponentVerse(opponentVerse);                                            // 相手バースの表示
 
                 // ライム入力
                 CurrentState = GameState.RhymeInput;
-                await InputTimer(settings.InputTimeLimitSec, _cancellationTokenSource.Token);    // 入力タイマー
+                _rhymeInputController.StartInput();                                                     // ライム入力の開始
+                await InputTimer(settings.InputTimeLimitSec, _cancellationTokenSource.Token);           // 入力タイマー
                 var submittedRhymes = _rhymeInputController.Submit();                                   // 入力されたライムの取得
 
                 // プレイヤーバースの生成
@@ -168,17 +164,17 @@ namespace RhAImers.Core
                     new List<string>(submittedRhymes),
                     playerVerse
                 );                                                                                      // ターンデータの生成
-                _currentSession.AddTurn(turnData);                                                      // ターンデータの追加
+                currentSession.AddTurn(turnData);                                                       // ターンデータの追加
             }
 
             // 得点の計算
             CurrentState = GameState.Scoring;
             _uiManager.ShowScoringLoading();                                                            // 得点計算中のUI表示
-            var scores = _scoreCalculator.Calculate(_currentSession.Turns);                             // TODO: 非同期のほうがいい
+            var scores = _scoreCalculator.Calculate(currentSession.Turns);                              // TODO: 非同期のほうがいい
 
             // 結果の表示
             CurrentState = GameState.Result;
-            var result = new BattleResult(_currentSession.Turns, scores);                               // 結果データの生成
+            var result = new BattleResult(currentSession.Turns, scores);                                // 結果データの生成
             _uiManager.ShowResult(result);                                                              // 結果の表示
         }
 

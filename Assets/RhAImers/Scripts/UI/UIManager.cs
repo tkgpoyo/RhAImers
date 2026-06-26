@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
 using RhAImers.Battle;
@@ -15,6 +16,10 @@ namespace RhAImers.UI
         [SerializeField] private Text _generatedVerseText;
         [SerializeField] private Text _resultText;
         [SerializeField] private Text _statusText;
+
+        /// ADD 2026/06/26 yota リトライ機能実装のため
+        /// <summary>リトライボタンが選択されたときのイベント</summary>
+        public event Action OnRetrySelected;
 
         public void ShowTitle()
         {
