@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System;
 
 namespace RhAImers.Scoring
 {
@@ -13,16 +14,20 @@ namespace RhAImers.Scoring
 
         public float Evaluate(IReadOnlyList<string> words)
         {
-            if (words == null || words.Count == 0)
+            if (words == null || words.Count <= 1)
                 return 0f;
 
             var total = 0f;
-            for (var i = 0; i < words.Count - 1; i++)
+            for (var i = 0; i < words.Count ; i++)
             {
-                total += EvaluatePair(words[i], words[i + 1]);
+                for(var j = i + 1 ; j < words.Count ; j++)
+                {
+                    total += EvaluatePair(words[i], words[j]);
+                }
             }
+            var pairs = (words.Count * (words.Count - 1)) / 2f;
 
-            return total / (words.Count - 1);
+            return total / pairs;
         }
 
         public float EvaluatePair(string a, string b)
@@ -32,8 +37,22 @@ namespace RhAImers.Scoring
             var vowelA = _vowelConverter.ToVowels(a);
             var vowelB = _vowelConverter.ToVowels(b);
 
-            // TODO: 多分韻の固さの計算方法が違うはず，実装必要
-            return vowelA == vowelB ? 1f : 0f;
+            if(vowelA.Length < vowelB.Length){ (vowelA,vowelB) = (vowelB,vowelA); }
+            if (vowelB.Length == 0) return 0f;
+            // 韻の固さの計算
+            var maxMatch = 0;
+            for(var i = 0 ; i <= vowelA.Length - vowelB.Length ; i++)
+            {
+                var tmpMatch = 0;
+                for(var j = 0 ; j < vowelB.Length ; j++)
+                {
+                    if(vowelA[i+j] == vowelB[j]){tmpMatch++;}
+                        
+                }
+                maxMatch = Math.Max(maxMatch,tmpMatch);
+            }
+
+            return (float)maxMatch / vowelB.Length;
         }
     }
 }
