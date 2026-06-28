@@ -60,6 +60,50 @@ namespace RhAImers.Tests.EditMode.Scoring
         }
 
         [Test]
+        public void EvaluatePair_WhenOneStringIsNullOrWhiteSpace_ReturnsZero()
+        {
+            Assert.That(_evaluator.EvaluatePair("aaau", null), Is.EqualTo(0.0f));
+            Assert.That(_evaluator.EvaluatePair(null, "aaau"), Is.EqualTo(0.0f));
+            Assert.That(_evaluator.EvaluatePair("aaau", ""), Is.EqualTo(0.0f));
+            Assert.That(_evaluator.EvaluatePair("   ", "aaau"), Is.EqualTo(0.0f));
+        }
+
+        [Test]
+        public void EvaluatePair_WhenBothStringsAreNullOrWhiteSpace_ReturnsZero()
+        {
+            Assert.That(_evaluator.EvaluatePair(null, null), Is.EqualTo(0.0f));
+            Assert.That(_evaluator.EvaluatePair("", ""), Is.EqualTo(0.0f));
+            Assert.That(_evaluator.EvaluatePair(" ", "   "), Is.EqualTo(0.0f));
+        }
+
+        [Test]
+        public void EvaluatePair_WhenArgumentsReversed_ReturnsSameScore()
+        {
+            // 引数の順序を入れ替えても同じスコアになることを確認
+            var score1 = _evaluator.EvaluatePair("あいう", "あいうえお"); // aiu vs aiueo -> 1.0f
+            var score2 = _evaluator.EvaluatePair("あいうえお", "あいう");
+            Assert.That(score1, Is.EqualTo(1.0f).Within(0.001f));
+            Assert.That(score1, Is.EqualTo(score2).Within(0.001f));
+        }
+
+        [Test]
+        public void EvaluatePair_WithYoonAndChouonpu_ReturnsCorrectScore()
+        {
+            // 「きゃー」 -> aa
+            // 「わー」 -> aa
+            var score = _evaluator.EvaluatePair("きゃー", "わー");
+            Assert.That(score, Is.EqualTo(1.0f).Within(0.001f));
+        }
+        
+        [Test]
+        public void EvaluatePair_WhenConvertedVowelIsEmpty_ReturnsZero()
+        {
+            // 記号などで母音変換後に空文字になる場合
+            var score = _evaluator.EvaluatePair("!!!", "???");
+            Assert.That(score, Is.EqualTo(0.0f).Within(0.001f));
+        }
+
+        [Test]
         public void EvaluateAverage_WhenMultipleVowels_ReturnsAveragePairScore()
         {
             // aaau vs aqau = 0.75
@@ -68,9 +112,9 @@ namespace RhAImers.Tests.EditMode.Scoring
             // average = 0.833...
             var vowels = new List<string>
             {
-                "aaau",
-                "aqau",
-                "aqau"
+                "たたかう",
+                "まったく",
+                "かならず"
             };
 
             var score = _evaluator.Evaluate(vowels);

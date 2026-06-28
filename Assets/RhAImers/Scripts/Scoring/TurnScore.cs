@@ -8,8 +8,8 @@ namespace RhAImers.Scoring
         public float AverageHardness { get; }
         public int RelevanceCount { get; }
         /// <summary>合計点数</summary>
-        /// TODO: 合計点数適当に書いたが，これでいいの？要検討
-        public int Total => Mathf.FloorToInt(RhymeCount * AverageHardness * RelevanceCount);
+        /// TODO: スコア計算暫定
+        public int Total => Mathf.FloorToInt(RhymeCount * AverageHardness * (RelevanceCount+1));
 
         public TurnScore(int rhymeCount, float averageHardness, int relevanceCount)
         {

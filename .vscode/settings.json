@@ -67,5 +67,6 @@
         "*.sln": "*.csproj",
         "*.slnx": "*.csproj"
     },
-    "dotnet.defaultSolution": "RhAImers.slnx"
+    "dotnet.defaultSolution": "RhAImers.slnx",
+    "clangd.enableCodeCompletion": false
 }
