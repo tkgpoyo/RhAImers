@@ -213,6 +213,7 @@ namespace RhAImers.Core
             var remainingSec = Mathf.Max(0, sec);       // 残り時間（int）
             var elapsedMillisec = 0f;                   // 経過時間
             _uiManager.ShowInputTimer(remainingSec);    // 残り時間の表示
+            _hasSubmittedCurrentTurn = false;
 
             while (remainingSec > 0 && !_hasSubmittedCurrentTurn && !ct.IsCancellationRequested) {
                 await UniTask.Yield(ct);                                                    // 1フレーム待機
