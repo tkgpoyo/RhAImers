@@ -19,7 +19,7 @@ namespace RhAImers.VerseGeneration
 
         private const string DefaultModel = "gemini-2.5-flash-lite";
 
-        private const string ApiKeyEnvironmentVariable = "GemKey"; //AQ.Ab8RN6Jm-wyE8NgOKmLGdwvj1wuz9wKgQIljfuJZozTVkBlY6w
+        private const string ApiKeyEnvironmentVariable = "GemKey";
 
         private readonly string _apiKey;
         private readonly string _model;
