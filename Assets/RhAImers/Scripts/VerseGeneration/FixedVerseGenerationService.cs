@@ -1,8 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-using Cysharp.Threading.Tasks;
 using RhAImers.Battle;
 
 namespace RhAImers.VerseGeneration
@@ -13,7 +10,8 @@ namespace RhAImers.VerseGeneration
     /// </summary>
     public class FixedVerseGenerationService : IVerseGenerationService
     {
-        private static readonly string[] PresetOpponentVerses = new string[] {
+        private static readonly string[] PresetOpponentVerses =
+        {
             "俺のリズムは止まらない 熱い血が沸き立つ\nマイクを握る手に力 世界が変わる瞬間",
             "言葉の刃で斬り裂く 暗闇を照らす光\nビートに乗せた魂 誰も止められない炎",
             "街の角で磨いた技 今こそ見せる時が来た\nリズムと韻が織りなす 俺だけの物語を聞け",
@@ -21,21 +19,44 @@ namespace RhAImers.VerseGeneration
             "言葉は弾丸よりも鋭い 心を貫く詩の力\nお前には見えているか この先に続く道が",
         };
 
-        public UniTask<Verse> GenerateOpponentVerseAsync(BattleContext context, CancellationToken ct = default)
+        public Verse GenerateOpponentVerse(BattleContext context)
         {
             var index = context.TurnIndex % PresetOpponentVerses.Length;
-            return UniTask.FromResult(new Verse(PresetOpponentVerses[index], Array.Empty<VerseHighlight>()));
+            return new Verse(PresetOpponentVerses[index], Array.Empty<VerseHighlight>());
         }
 
-        public UniTask<Verse> GeneratePlayerVerseAsync(IReadOnlyList<string> rhymeWords, string opponentVerseText, CancellationToken ct = default)
+        public Verse GeneratePlayerVerse(IReadOnlyList<string> rhymes, string opponentVerseText)
         {
-            var rhymeList = rhymeWords != null && rhymeWords.Count > 0
-                ? string.Join("と", rhymeWords)
+            var rhymeList = rhymes != null && rhymes.Count > 0
+                ? string.Join("と", rhymes)
                 : "言葉";
 
             var text = $"{rhymeList}で答える これが俺の返し\nお前のバースを超えていく 終わりなき挑戦を見せろ";
 
-            return UniTask.FromResult(new Verse(text, VerseHighlightFinder.Find(text, rhymeWords)));
+            return new Verse(text, FindRhymeHighlights(text, rhymes));
+        }
+
+        private static IReadOnlyList<VerseHighlight> FindRhymeHighlights(
+            string text, IReadOnlyList<string> rhymes)
+        {
+            var highlights = new List<VerseHighlight>();
+            if (string.IsNullOrEmpty(text) || rhymes == null) return highlights;
+
+            foreach (var rhyme in rhymes)
+            {
+                if (string.IsNullOrEmpty(rhyme)) continue;
+
+                var searchFrom = 0;
+                while (searchFrom < text.Length)
+                {
+                    var idx = text.IndexOf(rhyme, searchFrom, StringComparison.Ordinal);
+                    if (idx < 0) break;
+                    highlights.Add(new VerseHighlight(idx, rhyme.Length));
+                    searchFrom = idx + rhyme.Length;
+                }
+            }
+
+            return highlights;
         }
     }
 }

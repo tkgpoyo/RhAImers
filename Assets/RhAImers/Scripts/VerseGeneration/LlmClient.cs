@@ -12,13 +12,14 @@ namespace RhAImers.VerseGeneration
     /// </summary>
     public class LlmClient
     {
-        public const string API_KEY_SAMPLE = "YOUR_API_KEY_HERE";
         private static readonly HttpClient Http = new HttpClient();
 
         private const string EndpointTemplate =
             "https://generativelanguage.googleapis.com/v1beta/models/{0}:generateContent?key={1}";
 
         private const string DefaultModel = "gemini-2.5-flash-lite";
+
+        private const string ApiKeyEnvironmentVariable = "GemKey"; //AQ.Ab8RN6Jm-wyE8NgOKmLGdwvj1wuz9wKgQIljfuJZozTVkBlY6w
 
         private readonly string _apiKey;
         private readonly string _model;
@@ -29,6 +30,24 @@ namespace RhAImers.VerseGeneration
                 throw new ArgumentException("API key must not be empty.", nameof(apiKey));
             _apiKey = apiKey;
             _model  = model;
+        }
+
+        /// <summary>
+        /// Builds a client using the API key from the <c>GEMINI_API_KEY</c>
+        /// environment variable, so the key never has to live in source control
+        /// or a serialized asset.
+        /// </summary>
+        public static LlmClient CreateFromEnvironment(string model = DefaultModel)
+        {
+            var apiKey = Environment.GetEnvironmentVariable(ApiKeyEnvironmentVariable);
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                throw new InvalidOperationException(
+                    $"Environment variable '{ApiKeyEnvironmentVariable}' is not set. " +
+                    "Set it to your Gemini API key before starting the game.");
+            }
+
+            return new LlmClient(apiKey, model);
         }
 
         public string Request(string prompt)
