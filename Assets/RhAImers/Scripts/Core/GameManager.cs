@@ -26,14 +26,11 @@ namespace RhAImers.Core
         /// <summary>得点計算を行うクラス</summary>
         private ScoreCalculator _scoreCalculator;
         /// <summary>入力タイマーのキャンセルトークンソース</summary>
-        private CancellationTokenSource _cancellationTokenSource = new();
+        private CancellationTokenSource _inputRhymeCts = new();
 
         [SerializeField] private RhymeInputController _rhymeInputController;
         [SerializeField] private UIManager _uiManager;
         [SerializeField] private int _defaultInputTimeLimitSec = 30;
-
-        private Coroutine _inputTimerCoroutine;
-        private bool _hasSubmittedCurrentTurn;
 
         public GameState CurrentState { get; private set; }
         public BattleSettings CurrentSettings { get; private set; }
@@ -125,7 +122,7 @@ namespace RhAImers.Core
         private void HandleSubmitRequested()
         {
             if (CurrentState is GameState.RhymeInput) { // ライム入力中の場合
-                _hasSubmittedCurrentTurn = true;        // 提出済みにする
+                _inputRhymeCts?.Cancel();               // 入力タイマーのキャンセル
             }
         }
         #endregion (イベント処理)
@@ -155,29 +152,51 @@ namespace RhAImers.Core
                 var currentContext = currentSession.GenerateBattleContext();                            // バトルコンテキストの生成
 
                 // 相手バース生成
+                var cts = new CancellationTokenSource();
                 CurrentState = GameState.OpponentVerse;                                                 // ゲーム状態を「相手バース生成中」に変更
                 _uiManager.ShowOpponentVerseLoading();                                                  // 相手バース生成中のUI表示
                 var opponentVerse = await _verseGenerationService.GenerateOpponentVerseAsync(
                     currentContext, 
-                    _cancellationTokenSource.Token
+                    cts.Token
                 );                                                                                      // 相手バースの取得
                 _uiManager.ShowOpponentVerse(opponentVerse);                                            // 相手バースの表示
 
+                // TODO: 雑な Dispose処理
+                cts.Dispose();
+                cts = null;
+
                 // ライム入力
+                cts = new CancellationTokenSource();
+                _inputRhymeCts = cts;
                 CurrentState = GameState.RhymeInput;
-                _rhymeInputController.StartInput();                                                     // ライム入力の開始
-                await InputTimer(settings.InputTimeLimitSec, _cancellationTokenSource.Token);           // 入力タイマー
+                try {
+                    _rhymeInputController.StartInput();                                                 // ライム入力の開始
+                    await InputTimer(settings.InputTimeLimitSec, _uiManager, _inputRhymeCts.Token);     // 入力タイマー
+                }
+                catch {
+                    // TODO: 例外処理が必要...？
+                }
+                finally {
+                    cts.Dispose();                                                                      // キャンセルトークンソースの破棄
+                    if (_inputRhymeCts == cts) {
+                        _inputRhymeCts = null;
+                    }
+                }
                 var submittedRhymes = _rhymeInputController.Submit();                                   // 入力されたライムの取得
 
                 // プレイヤーバースの生成
+                cts = new CancellationTokenSource();
                 CurrentState = GameState.VerseGeneration;
                 _uiManager.ShowGenerationLoading();                                                     // プレイヤーバース生成中のUI表示
                 var playerVerse = await _verseGenerationService.GeneratePlayerVerseAsync(
                     submittedRhymes,
                     opponentVerse.Text,
-                    _cancellationTokenSource.Token
+                    cts.Token
                 );                                                                                      // プレイヤーバースの取得
                 _uiManager.ShowGeneratedVerse(playerVerse);                                             // プレイヤーバースの表示
+                // TODO: 雑な Dispose処理
+                cts.Dispose();
+                cts = null;
 
                 // ターンデータの追加
                 CurrentState = GameState.TurnEnd;
@@ -208,14 +227,13 @@ namespace RhAImers.Core
         /// <param name="sec">指定秒数</param>
         /// <param name="ct">キャンセルトークン</param>
         /// <returns></returns>
-        private async UniTask InputTimer(int sec, CancellationToken ct = default)
+        private async UniTask InputTimer(int sec, UIManager uIManager, CancellationToken ct = default)
         {
             var remainingSec = Mathf.Max(0, sec);       // 残り時間（int）
             var elapsedMillisec = 0f;                   // 経過時間
-            _uiManager.ShowInputTimer(remainingSec);    // 残り時間の表示
-            _hasSubmittedCurrentTurn = false;
+            uIManager.ShowInputTimer(remainingSec);    // 残り時間の表示
 
-            while (remainingSec > 0 && !_hasSubmittedCurrentTurn && !ct.IsCancellationRequested) {
+            while (remainingSec > 0 && !ct.IsCancellationRequested) {
                 await UniTask.Yield(ct);                                                    // 1フレーム待機
                 elapsedMillisec += Time.deltaTime * 1000;                                   // 経過時間をミリ秒で加算
 
@@ -223,7 +241,7 @@ namespace RhAImers.Core
                 var newRemainingSec = Mathf.Max(0, sec - (int)(elapsedMillisec / 1000));    // 残り時間を秒単位で計算
                 if (newRemainingSec != remainingSec) {                                      // 残り時間が変化した場合
                     remainingSec = newRemainingSec;                                         // 残り時間を更新
-                    _uiManager.UpdateInputTimer(remainingSec);                              // UIを更新
+                    uIManager.UpdateInputTimer(remainingSec);                              // UIを更新
                 }
             }
         }
