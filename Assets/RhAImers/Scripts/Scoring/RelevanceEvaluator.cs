@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using RhAImers.Battle;
 using RhAImers.VerseGeneration;
 
@@ -16,10 +17,10 @@ namespace RhAImers.Scoring
         }
 
         // TODO: 戻り値はintでいいかも？わからないが...要検討
-        public IReadOnlyList<string> Evaluate(IReadOnlyList<string> words, string opponentVerseText)
+        public async UniTask<IReadOnlyList<string>> EvaluateAsync(IReadOnlyList<string> words, string opponentVerseText)
         {
             var prompt = _promptBuilder.BuildRelevancePrompt(words, opponentVerseText);
-            var response = _client.Request(prompt);
+            var response = await _client.Request(prompt);
             // TODO: 頑張って関連度計算
             return new List<string>();
         }

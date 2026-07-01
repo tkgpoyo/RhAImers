@@ -163,9 +163,7 @@ namespace RhAImers.Core
             CurrentState = GameState.BattleStart;
             var currentSession = new BattleSession(MAX_TURN);                                           // バトルセッションの生成 TODO: MaxTurnを設定から取得するようにする
 
-            Debug.Log("here start");
             for (int turn = 0; turn < settings.MaxTurn; turn++) {
-                Debug.Log($"here turn:{turn}");
                 // セットアップ
                 var currentContext = currentSession.GenerateBattleContext();                            // バトルコンテキストの生成
 
@@ -260,12 +258,11 @@ namespace RhAImers.Core
                 );                                                                                      // ターンデータの生成
                 currentSession.AddTurn(turnData);                                                       // ターンデータの追加
             }
-            Debug.Log("here end");
 
             // 得点の計算
             CurrentState = GameState.Scoring;
             _uiManager.ShowScoringLoading();                                                            // 得点計算中のUI表示
-            var scores = _scoreCalculator.Calculate(currentSession.Turns);                              // TODO: 非同期のほうがいい
+            var scores = await _scoreCalculator.CalculateAsync(currentSession.Turns);                   // 得点を取得
 
             // 結果の表示
             CurrentState = GameState.Result;

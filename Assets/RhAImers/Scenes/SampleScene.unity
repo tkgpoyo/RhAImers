@@ -315,8 +315,8 @@ MonoBehaviour:
   _generatedVerseText: {fileID: 473528113}
   _resultText: {fileID: 733395185}
   _statusText: {fileID: 645848086}
-  _resultPanel: {fileID: 0}
-  _retryButton: {fileID: 0}
+  _resultPanel: {fileID: 248128458}
+  _retryButton: {fileID: 1152246871}
 --- !u!1 &130909799
 GameObject:
   m_ObjectHideFlags: 0
@@ -413,7 +413,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &248128459
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2028,92 +2028,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1689074945}
   m_CullTransparentMesh: 1
---- !u!1 &1843497814
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1843497818}
-  - component: {fileID: 1843497817}
-  - component: {fileID: 1843497816}
-  - component: {fileID: 1843497815}
-  m_Layer: 0
-  m_Name: Manager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!114 &1843497815
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1843497814}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eab35fd1f02464a8c8020bafb22d446f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: RhAImers::RhAImers.Input.RhymeInputController
-  _rhymeInputField: {fileID: 15748640}
-  _submitButton: {fileID: 1224596141}
-  _uiManager: {fileID: 1843497817}
-  _notifySubmitRequested: 1
-  _refocusInputAfterAdd: 1
---- !u!114 &1843497816
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1843497814}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 32f8c7cc806c84032a1cd1b3e99ba629, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: RhAImers::RhAImers.Core.GameManager
-  _rhymeInputController: {fileID: 1843497815}
-  _uiManager: {fileID: 1843497817}
-  _defaultInputTimeLimitSec: 30
---- !u!114 &1843497817
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1843497814}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4a08d8d794d0f4acda2f4fc5df0ca7ee, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: RhAImers::RhAImers.UI.UIManager
-  _opponentVerseText: {fileID: 1343886150}
-  _inputTimerText: {fileID: 507202076}
-  _inputRhymesText: {fileID: 1324723127}
-  _generatedVerseText: {fileID: 473528113}
-  _resultText: {fileID: 733395185}
-  _statusText: {fileID: 645848086}
-  _resultPanel: {fileID: 0}
-  _retryButton: {fileID: 0}
---- !u!4 &1843497818
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1843497814}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -2124,4 +2038,3 @@ SceneRoots:
   - {fileID: 706867492}
   - {fileID: 286586154}
   - {fileID: 1441239712}
-  - {fileID: 1843497818}

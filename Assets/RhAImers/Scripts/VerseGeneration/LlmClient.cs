@@ -1,3 +1,4 @@
+using Cysharp.Threading.Tasks;
 using System;
 using System.Net.Http;
 using System.Text;
@@ -50,7 +51,7 @@ namespace RhAImers.VerseGeneration
             return new LlmClient(apiKey, model);
         }
 
-        public string Request(string prompt)
+        public async UniTask<string> Request(string prompt)
         {
             var url     = string.Format(EndpointTemplate, _model, _apiKey);
             var body    = BuildRequestBody(prompt);
@@ -60,21 +61,12 @@ namespace RhAImers.VerseGeneration
             {
                 HttpResponseMessage response;
                 string responseBody;
-                try
-                {
-                    response     = Http.SendAsync(request).GetAwaiter().GetResult();
-                    responseBody = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogError($"[LlmClient] HTTP request failed: {ex.Message}");
-                    return string.Empty;
-                }
+                response = await Http.SendAsync(request);
+                responseBody = await response.Content.ReadAsStringAsync();
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    Debug.LogError($"[LlmClient] API error {(int)response.StatusCode}: {responseBody}");
-                    return string.Empty;
+                    throw new HttpRequestException($"[LlmClient] API error {(int)response.StatusCode}: {responseBody}");
                 }
 
                 return ExtractText(responseBody);

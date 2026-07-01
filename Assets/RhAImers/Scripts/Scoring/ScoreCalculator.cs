@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using RhAImers.Battle;
 
 namespace RhAImers.Scoring
@@ -14,15 +15,15 @@ namespace RhAImers.Scoring
             _relevanceEvaluator = relevanceEvaluator;
         }
 
-        public IReadOnlyList<TurnScore> Calculate(IReadOnlyList<TurnData> turns)
+        public async UniTask<IReadOnlyList<TurnScore>> CalculateAsync(IReadOnlyList<TurnData> turns)
         {
             var scores = new List<TurnScore>();
             foreach (var turn in turns)
             {
                 var rhymeCount = turn.InputRhymes.Count;
                 var averageHardness = _hardnessEvaluator.Evaluate(turn.InputRhymes);
-                var relevanceCount = _relevanceEvaluator.Evaluate(turn.InputRhymes, turn.OpponentVerse.Text).Count;
-                scores.Add(new TurnScore(rhymeCount, averageHardness, relevanceCount));
+                var relevantWords = await _relevanceEvaluator.EvaluateAsync(turn.InputRhymes, turn.OpponentVerse.Text);
+                scores.Add(new TurnScore(rhymeCount, averageHardness, relevantWords.Count));
             }
 
             return scores;
