@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using RhAImers.Battle;
 using RhAImers.Input;
@@ -8,18 +9,46 @@ namespace RhAImers.Debugging
 {
     public class UIBattleDebugStarter : MonoBehaviour
     {
+        private static UIBattleDebugStarter _activeInstance;
+
         [SerializeField] private UIManager _uiManager;
         [SerializeField] private RhymeInputController _rhymeInputController;
+        [SerializeField] private int _maxTurn = 3;
         [SerializeField] private int _inputTimeLimitSec = 30;
+        [SerializeField] private float _nextTurnDelaySec = 1.5f;
+        [SerializeField] private bool _suppressGameManagerSubmitRequested = true;
 
+        private int _currentTurnIndex;
         private float _remainingTime;
-        private bool _isTimerRunning;
+        private bool _isWaitingForSubmit;
+        private Coroutine _nextTurnCoroutine;
+
+        private void Awake()
+        {
+            if (_activeInstance != null && _activeInstance != this)
+            {
+                Debug.LogWarning(
+                    $"Duplicate UIBattleDebugStarter was disabled: {gameObject.name}. " +
+                    $"Active instance is {_activeInstance.gameObject.name}."
+                );
+
+                enabled = false;
+                return;
+            }
+
+            _activeInstance = this;
+        }
 
         private void OnEnable()
         {
             if (_rhymeInputController != null)
             {
-                _rhymeInputController.SubmitRequested += HandleRhymesSubmitted;
+                _rhymeInputController.Submitted += HandleRhymesSubmitted;
+            }
+
+            if (_uiManager != null)
+            {
+                _uiManager.RetrySelected += HandleRetrySelected;
             }
         }
 
@@ -27,32 +56,37 @@ namespace RhAImers.Debugging
         {
             if (_rhymeInputController != null)
             {
-                _rhymeInputController.SubmitRequested -= HandleRhymesSubmitted;
+                _rhymeInputController.Submitted -= HandleRhymesSubmitted;
+                _rhymeInputController.SetNotifySubmitRequested(true);
+            }
+
+            if (_uiManager != null)
+            {
+                _uiManager.RetrySelected -= HandleRetrySelected;
+            }
+
+            StopNextTurnCoroutine();
+            _isWaitingForSubmit = false;
+
+            if (_activeInstance == this)
+            {
+                _activeInstance = null;
             }
         }
 
         private void Start()
         {
-            Debug.Log("UIBattleDebugStarterは生きている");
-            var opponentVerse = new Verse(
-                "俺のライムが響くこのステージ\n君の言葉で返してみな",
-                new List<VerseHighlight>()
-            );
+            if (_rhymeInputController != null && _suppressGameManagerSubmitRequested)
+            {
+                _rhymeInputController.SetNotifySubmitRequested(false);
+            }
 
-            _uiManager.ShowOpponentVerse(opponentVerse);
-            _uiManager.ShowInputTimer(_inputTimeLimitSec);
-            _uiManager.ShowInputRhymes(new List<string>());
-            _uiManager.ShowGeneratedVerse(new Verse(string.Empty, new List<VerseHighlight>()));
-
-            _rhymeInputController.StartInput();
-
-            _remainingTime = _inputTimeLimitSec;
-            _isTimerRunning = true;
+            RestartDebugBattle();
         }
 
         private void Update()
         {
-            if (!_isTimerRunning)
+            if (!_isWaitingForSubmit)
             {
                 return;
             }
@@ -65,34 +99,142 @@ namespace RhAImers.Debugging
 
             if (currentSec != previousSec)
             {
-                _uiManager.UpdateInputTimer(currentSec);
+                _uiManager?.UpdateInputTimer(currentSec);
             }
 
             if (_remainingTime <= 0f)
             {
-                _isTimerRunning = false;
-                _uiManager.UpdateInputTimer(0);
+                IReadOnlyList<string> submittedRhymes = _rhymeInputController != null
+                    ? _rhymeInputController.Submit()
+                    : new List<string>();
 
-                IReadOnlyList<string> submittedRhymes = _rhymeInputController.Submit();
-                HandleRhymesSubmitted();
+                ResolveTurn(submittedRhymes);
             }
         }
 
-        private void HandleRhymesSubmitted()
+        private void HandleRetrySelected()
         {
-            _isTimerRunning = false;
-            var rhymes = _rhymeInputController.Submit();
+            RestartDebugBattle();
+        }
+
+        private void RestartDebugBattle()
+        {
+            StopNextTurnCoroutine();
+
+            _currentTurnIndex = 0;
+            _remainingTime = _inputTimeLimitSec;
+            _isWaitingForSubmit = false;
+
+            BeginTurn();
+        }
+
+        private void BeginTurn()
+        {
+            StopNextTurnCoroutine();
+
+            _isWaitingForSubmit = true;
+            _remainingTime = _inputTimeLimitSec;
+
+            Verse opponentVerse = CreateOpponentVerse(_currentTurnIndex);
+
+            _uiManager?.ShowOpponentVerse(opponentVerse);
+            _uiManager?.ShowInputTimer(_inputTimeLimitSec);
+            _uiManager?.ShowGeneratedVerse(new Verse(
+                $"{_currentTurnIndex + 1}ターン目：ライムを入力してください",
+                new List<VerseHighlight>()
+            ));
+
+            _rhymeInputController?.StartInput();
+        }
+
+        private Verse CreateOpponentVerse(int turnIndex)
+        {
+            string text;
+
+            switch (turnIndex)
+            {
+                case 0:
+                    text = "1ターン目\n俺の[[ライム]]が響くこのステージ\n君の【スタイル】で返してみな";
+                    break;
+
+                case 1:
+                    text = "2ターン目\nまだまだ続くこの[[バトル]]\n次の【言葉】で流れを変えろ";
+                    break;
+
+                case 2:
+                    text = "3ターン目\n最後に決めろ[[フロウ]]と[[パンチライン]]\nここで【勝負】を終わらせろ";
+                    break;
+
+                default:
+                    text = $"{turnIndex + 1}ターン目\nテスト用の[[相手バース]]です";
+                    break;
+            }
+
+            return new Verse(text, new List<VerseHighlight>());
+        }
+
+        private void HandleRhymesSubmitted(IReadOnlyList<string> rhymes)
+        {
+            ResolveTurn(rhymes);
+        }
+
+        private void ResolveTurn(IReadOnlyList<string> rhymes)
+        {
+            if (!_isWaitingForSubmit)
+            {
+                return;
+            }
+
+            _isWaitingForSubmit = false;
+            _uiManager?.UpdateInputTimer(0);
 
             string joinedRhymes = rhymes == null || rhymes.Count == 0
                 ? "ライム未入力"
                 : string.Join(" / ", rhymes);
 
-            var generatedVerse = new Verse(
-                $"入力完了\n受け取ったライム：{joinedRhymes}",
+            Verse generatedVerse = new Verse(
+                $"{_currentTurnIndex + 1}ターン目の入力完了\n受け取ったライム：[[{joinedRhymes}]]",
                 new List<VerseHighlight>()
             );
 
-            _uiManager.ShowGeneratedVerse(generatedVerse);
+            _uiManager?.ShowGeneratedVerse(generatedVerse);
+
+            if (_currentTurnIndex + 1 >= _maxTurn)
+            {
+                ShowAllTurnsFinished();
+                return;
+            }
+
+            _nextTurnCoroutine = StartCoroutine(BeginNextTurnAfterDelay());
+        }
+
+        private IEnumerator BeginNextTurnAfterDelay()
+        {
+            yield return new WaitForSeconds(_nextTurnDelaySec);
+
+            _currentTurnIndex++;
+            BeginTurn();
+
+            _nextTurnCoroutine = null;
+        }
+
+        private void ShowAllTurnsFinished()
+        {
+            _isWaitingForSubmit = false;
+            StopNextTurnCoroutine();
+
+            _uiManager?.ShowResult(default(BattleResult));
+        }
+
+        private void StopNextTurnCoroutine()
+        {
+            if (_nextTurnCoroutine == null)
+            {
+                return;
+            }
+
+            StopCoroutine(_nextTurnCoroutine);
+            _nextTurnCoroutine = null;
         }
     }
 }

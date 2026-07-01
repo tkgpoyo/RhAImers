@@ -1,14 +1,13 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using RhAImers.UI;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace RhAImers.Input
 {
-    /// <summary>
-    /// ライム入力を管理するクラス
-    /// </summary>
     public class RhymeInputController : MonoBehaviour
     {
         [Header("UI References")]
@@ -16,14 +15,19 @@ namespace RhAImers.Input
         [SerializeField] private Button _submitButton;
         [SerializeField] private UIManager _uiManager;
 
-        /// <summary>入力されたライム</summary>
+        [Header("Submit Event")]
+        [SerializeField] private bool _notifySubmitRequested = true;
+
+        [Header("Input Focus")]
+        [SerializeField] private bool _refocusInputAfterAdd = true;
+
         private readonly List<string> _rhymes = new();
 
-        /// <summary>入力を受け付けるかどうか</summary>
         private bool _allowInput;
+        private Coroutine _refocusCoroutine;
 
-        /// <summary>提出完了時のイベント</summary>
         public event Action SubmitRequested;
+        public event Action<IReadOnlyList<string>> Submitted;
 
         public IReadOnlyList<string> Rhymes => _rhymes.AsReadOnly();
 
@@ -32,6 +36,13 @@ namespace RhAImers.Input
             if (_rhymeInputField != null)
             {
                 _rhymeInputField.lineType = InputField.LineType.SingleLine;
+            }
+
+            if (_submitButton != null)
+            {
+                Navigation navigation = _submitButton.navigation;
+                navigation.mode = Navigation.Mode.None;
+                _submitButton.navigation = navigation;
             }
         }
 
@@ -44,7 +55,7 @@ namespace RhAImers.Input
 
             if (_submitButton != null)
             {
-                _submitButton.onClick.AddListener(RequestSubmit);
+                _submitButton.onClick.AddListener(SubmitInput);
             }
         }
 
@@ -57,15 +68,21 @@ namespace RhAImers.Input
 
             if (_submitButton != null)
             {
-                _submitButton.onClick.RemoveListener(RequestSubmit);
+                _submitButton.onClick.RemoveListener(SubmitInput);
             }
+
+            StopRefocusCoroutine();
         }
 
-        /// <summary>
-        /// 入力の受付を開始します。
-        /// </summary>
+        public void SetNotifySubmitRequested(bool notify)
+        {
+            _notifySubmitRequested = notify;
+        }
+
         public void StartInput()
         {
+            StopRefocusCoroutine();
+
             _allowInput = true;
             _rhymes.Clear();
 
@@ -75,45 +92,34 @@ namespace RhAImers.Input
             {
                 _rhymeInputField.SetTextWithoutNotify(string.Empty);
                 _rhymeInputField.interactable = true;
-                _rhymeInputField.Select();
-                _rhymeInputField.ActivateInputField();
             }
 
             if (_submitButton != null)
             {
                 _submitButton.interactable = true;
             }
+
+            RequestFocusInputFieldNextFrame();
         }
 
-        /// <summary>
-        /// ライムを追加します。
-        /// </summary>
-        /// <param name="word">追加するライム</param>
         public void AddRhyme(string word)
         {
-            Debug.Log($"AddRhyme called. allowInput={_allowInput}, word={word}");
-
             if (!_allowInput || string.IsNullOrWhiteSpace(word))
             {
-                Debug.Log("AddRhyme skipped.");
                 return;
             }
 
-            string trimmedWord = word.Trim();
-
-            _rhymes.Add(trimmedWord);
-
-            Debug.Log($"Rhyme added: {trimmedWord}, count={_rhymes.Count}");
-
+            _rhymes.Add(word.Trim());
             _uiManager?.ShowInputRhymes(_rhymes);
 
-            ClearAndFocusInputField();
+            ClearInputField();
+
+            if (_refocusInputAfterAdd)
+            {
+                RequestFocusInputFieldNextFrame();
+            }
         }
 
-        /// <summary>
-        /// ライムを削除します。
-        /// </summary>
-        /// <param name="word">削除するライム</param>
         public void RemoveRhyme(string word)
         {
             if (!_allowInput || string.IsNullOrWhiteSpace(word))
@@ -125,16 +131,14 @@ namespace RhAImers.Input
             _uiManager?.ShowInputRhymes(_rhymes);
         }
 
-        /// <summary>
-        /// 入力されたライムを返します。
-        /// </summary>
-        /// <returns>入力されたライム</returns>
         public IReadOnlyList<string> Submit()
         {
             _allowInput = false;
+            StopRefocusCoroutine();
 
             if (_rhymeInputField != null)
             {
+                _rhymeInputField.DeactivateInputField();
                 _rhymeInputField.interactable = false;
             }
 
@@ -143,13 +147,15 @@ namespace RhAImers.Input
                 _submitButton.interactable = false;
             }
 
+            if (EventSystem.current != null)
+            {
+                EventSystem.current.SetSelectedGameObject(null);
+            }
+
             return new List<string>(_rhymes);
         }
 
-        /// <summary>
-        /// 現在の入力内容を提出します。
-        /// </summary>
-        private void RequestSubmit()
+        public void SubmitInput()
         {
             if (!_allowInput)
             {
@@ -158,7 +164,24 @@ namespace RhAImers.Input
 
             AddCurrentInputText();
 
-            SubmitRequested?.Invoke();
+            IReadOnlyList<string> submittedRhymes = Submit();
+
+            Submitted?.Invoke(submittedRhymes);
+
+            if (_notifySubmitRequested)
+            {
+                SubmitRequested?.Invoke();
+            }
+        }
+
+        private void HandleInputEnded(string word)
+        {
+            if (!_allowInput)
+            {
+                return;
+            }
+
+            AddRhyme(word);
         }
 
         private void AddCurrentInputText()
@@ -171,7 +194,7 @@ namespace RhAImers.Input
             AddRhyme(_rhymeInputField.text);
         }
 
-        private void ClearAndFocusInputField()
+        private void ClearInputField()
         {
             if (_rhymeInputField == null)
             {
@@ -179,13 +202,56 @@ namespace RhAImers.Input
             }
 
             _rhymeInputField.SetTextWithoutNotify(string.Empty);
+        }
+
+        private void RequestFocusInputFieldNextFrame()
+        {
+            if (!_allowInput || _rhymeInputField == null)
+            {
+                return;
+            }
+
+            StopRefocusCoroutine();
+            _refocusCoroutine = StartCoroutine(FocusInputFieldNextFrame());
+        }
+
+        private IEnumerator FocusInputFieldNextFrame()
+        {
+            yield return null;
+
+            if (_allowInput)
+            {
+                FocusInputField();
+            }
+
+            _refocusCoroutine = null;
+        }
+
+        private void FocusInputField()
+        {
+            if (_rhymeInputField == null || !_rhymeInputField.interactable)
+            {
+                return;
+            }
+
+            if (EventSystem.current != null)
+            {
+                EventSystem.current.SetSelectedGameObject(_rhymeInputField.gameObject);
+            }
+
             _rhymeInputField.Select();
             _rhymeInputField.ActivateInputField();
         }
 
-        private void HandleInputEnded(string word)
+        private void StopRefocusCoroutine()
         {
-            AddRhyme(word);
+            if (_refocusCoroutine == null)
+            {
+                return;
+            }
+
+            StopCoroutine(_refocusCoroutine);
+            _refocusCoroutine = null;
         }
     }
 }
