@@ -46,11 +46,13 @@ namespace RhAImers.Core
         private void OnEnable()
         {
             _rhymeInputController.SubmitRequested += HandleSubmitRequested;
+            _uiManager.RetrySelected += HandleRetrySelected;
         }
 
         private void OnDisable()
         {
             _rhymeInputController.SubmitRequested -= HandleSubmitRequested;
+            _uiManager.RetrySelected -= HandleRetrySelected;
         }
 
         private void Update()
@@ -125,6 +127,17 @@ namespace RhAImers.Core
                 _inputRhymeCts?.Cancel();               // 入力タイマーのキャンセル
             }
         }
+        /// <summary>
+        /// <see cref="UIManager.RetrySelected">イベントのイベントハンドラ
+        /// </summary>
+        private void HandleRetrySelected()
+        {
+            if (CurrentState is GameState.Result)
+            {
+                // TODO: リセット処理必要かも？
+                StartGame();                            // ゲーム開始
+            }
+        }
         #endregion (イベント処理)
 
         /// <summary>
@@ -155,15 +168,31 @@ namespace RhAImers.Core
                 var cts = new CancellationTokenSource();
                 CurrentState = GameState.OpponentVerse;                                                 // ゲーム状態を「相手バース生成中」に変更
                 _uiManager.ShowOpponentVerseLoading();                                                  // 相手バース生成中のUI表示
-                var opponentVerse = await _verseGenerationService.GenerateOpponentVerseAsync(
-                    currentContext, 
-                    cts.Token
-                );                                                                                      // 相手バースの取得
+                Verse opponentVerse;
+                try
+                {
+                    opponentVerse = await _verseGenerationService.GenerateOpponentVerseAsync(
+                        currentContext, 
+                        cts.Token
+                    );                                                                                      // 相手バースの取得
+                }
+                catch
+                {
+                    // TODO: API系のエラーのみをここで掴むべし
+                    _verseGenerationService = GetVerseGenerationService(VerseGenerationType.Fixed);
+                    opponentVerse = await _verseGenerationService.GenerateOpponentVerseAsync(
+                        currentContext,
+                        cts.Token
+                    );
+                }
+                finally
+                {
+                    // TODO: 雑な Dispose処理
+                    cts.Dispose();
+                    cts = null;
+                }
                 _uiManager.ShowOpponentVerse(opponentVerse);                                            // 相手バースの表示
 
-                // TODO: 雑な Dispose処理
-                cts.Dispose();
-                cts = null;
 
                 // ライム入力
                 cts = new CancellationTokenSource();
@@ -188,15 +217,32 @@ namespace RhAImers.Core
                 cts = new CancellationTokenSource();
                 CurrentState = GameState.VerseGeneration;
                 _uiManager.ShowGenerationLoading();                                                     // プレイヤーバース生成中のUI表示
-                var playerVerse = await _verseGenerationService.GeneratePlayerVerseAsync(
-                    submittedRhymes,
-                    opponentVerse.Text,
-                    cts.Token
-                );                                                                                      // プレイヤーバースの取得
+                Verse playerVerse;
+                try
+                {
+                    playerVerse = await _verseGenerationService.GeneratePlayerVerseAsync(
+                        submittedRhymes,
+                        opponentVerse.Text,
+                        cts.Token
+                    );                                                                                      // プレイヤーバースの取得
+                }
+                catch
+                {
+                    // TODO: API系のエラー以外は掴まない
+                    _verseGenerationService = GetVerseGenerationService(VerseGenerationType.Fixed);
+                    playerVerse = await _verseGenerationService.GeneratePlayerVerseAsync(
+                        submittedRhymes,
+                        opponentVerse.Text,
+                        cts.Token
+                    );
+                }
+                finally
+                {
+                    // TODO: 雑な Dispose処理
+                    cts.Dispose();
+                    cts = null;
+                }
                 _uiManager.ShowGeneratedVerse(playerVerse);                                             // プレイヤーバースの表示
-                // TODO: 雑な Dispose処理
-                cts.Dispose();
-                cts = null;
 
                 // ターンデータの追加
                 CurrentState = GameState.TurnEnd;
@@ -244,6 +290,15 @@ namespace RhAImers.Core
                     uIManager.UpdateInputTimer(remainingSec);                              // UIを更新
                 }
             }
+        }
+
+        private IVerseGenerationService GetVerseGenerationService(VerseGenerationType verseGenerationType)
+        {
+            return verseGenerationType switch
+            {
+                VerseGenerationType.Fixed => new FixedVerseGenerationService(),
+                _ => throw new NotImplementedException(),
+            };
         }
     }
 }
