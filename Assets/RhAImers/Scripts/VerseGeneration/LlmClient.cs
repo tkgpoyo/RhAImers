@@ -17,14 +17,14 @@ namespace RhAImers.VerseGeneration
         private const string EndpointTemplate =
             "https://generativelanguage.googleapis.com/v1beta/models/{0}:generateContent?key={1}";
 
-        private const string DefaultModel = "gemini-2.5-flash-lite";
+        private const string DefaultModel = "gemini-3.1-flash-lite";
 
         private const string ApiKeyEnvironmentVariable = "GemKey";
 
         private readonly string _apiKey;
         private readonly string _model;
 
-        public LlmClient(string apiKey, string model = DefaultModel)
+        private LlmClient(string apiKey, string model = DefaultModel)
         {
             if (string.IsNullOrWhiteSpace(apiKey))
                 throw new ArgumentException("API key must not be empty.", nameof(apiKey));
@@ -39,7 +39,7 @@ namespace RhAImers.VerseGeneration
         /// </summary>
         public static LlmClient CreateFromEnvironment(string model = DefaultModel)
         {
-            var apiKey = Environment.GetEnvironmentVariable(ApiKeyEnvironmentVariable);
+            var apiKey = Environment.GetEnvironmentVariable(ApiKeyEnvironmentVariable, EnvironmentVariableTarget.User);
             if (string.IsNullOrWhiteSpace(apiKey))
             {
                 throw new InvalidOperationException(
@@ -54,7 +54,7 @@ namespace RhAImers.VerseGeneration
         {
             var url     = string.Format(EndpointTemplate, _model, _apiKey);
             var body    = BuildRequestBody(prompt);
-            var content = new StringContent(body, Encoding.UTF8, "application/json");
+            var content = new StringContent(body, Encoding.UTF8, "text/plain");
 
             using (var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = content })
             {

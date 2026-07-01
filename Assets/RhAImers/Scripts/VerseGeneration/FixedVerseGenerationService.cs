@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using RhAImers.Battle;
 
 namespace RhAImers.VerseGeneration
@@ -19,13 +21,13 @@ namespace RhAImers.VerseGeneration
             "言葉は弾丸よりも鋭い 心を貫く詩の力\nお前には見えているか この先に続く道が",
         };
 
-        public Verse GenerateOpponentVerse(BattleContext context)
+        public UniTask<Verse> GenerateOpponentVerseAsync(BattleContext context, CancellationToken token = default)
         {
             var index = context.TurnIndex % PresetOpponentVerses.Length;
-            return new Verse(PresetOpponentVerses[index], Array.Empty<VerseHighlight>());
+            return UniTask.FromResult(new Verse(PresetOpponentVerses[index], Array.Empty<VerseHighlight>()));
         }
 
-        public Verse GeneratePlayerVerse(IReadOnlyList<string> rhymes, string opponentVerseText)
+        public UniTask<Verse> GeneratePlayerVerseAsync(IReadOnlyList<string> rhymes, string opponentVerseText, CancellationToken token = default)
         {
             var rhymeList = rhymes != null && rhymes.Count > 0
                 ? string.Join("と", rhymes)
@@ -33,7 +35,7 @@ namespace RhAImers.VerseGeneration
 
             var text = $"{rhymeList}で答える これが俺の返し\nお前のバースを超えていく 終わりなき挑戦を見せろ";
 
-            return new Verse(text, FindRhymeHighlights(text, rhymes));
+            return UniTask.FromResult(new Verse(text, FindRhymeHighlights(text, rhymes)));
         }
 
         private static IReadOnlyList<VerseHighlight> FindRhymeHighlights(

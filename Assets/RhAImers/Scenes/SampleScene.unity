@@ -315,8 +315,8 @@ MonoBehaviour:
   _generatedVerseText: {fileID: 473528113}
   _resultText: {fileID: 733395185}
   _statusText: {fileID: 645848086}
-  _resultPanel: {fileID: 248128458}
-  _retryButton: {fileID: 1152246871}
+  _resultPanel: {fileID: 0}
+  _retryButton: {fileID: 0}
 --- !u!1 &130909799
 GameObject:
   m_ObjectHideFlags: 0
@@ -413,7 +413,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &248128459
 RectTransform:
   m_ObjectHideFlags: 0

@@ -27,6 +27,8 @@ namespace RhAImers.Core
         private ScoreCalculator _scoreCalculator;
         /// <summary>入力タイマーのキャンセルトークンソース</summary>
         private CancellationTokenSource _inputRhymeCts = new();
+        /// <summary>LLMクライアント</summary>
+        private LlmClient _llmClient;
 
         [SerializeField] private RhymeInputController _rhymeInputController;
         [SerializeField] private UIManager _uiManager;
@@ -37,8 +39,9 @@ namespace RhAImers.Core
 
         private void Awake()
         {
-            _verseGenerationService = new FixedVerseGenerationService();                                                                    // TODO: これでいいの？
-            _scoreCalculator = new ScoreCalculator(new(new()), new(new(LlmClient.API_KEY_SAMPLE), new(new RhymeDictionary(new()))));        // TODO: 仮実装のためちゃんと実装
+            _llmClient = LlmClient.CreateFromEnvironment(); 
+            _verseGenerationService = new LlmVerseGenerationService(_llmClient, new(new RhymeDictionary(new())));       // TODO: 仮実装のためちゃんと実装
+            _scoreCalculator = new ScoreCalculator(new(new()), new(_llmClient, new(new RhymeDictionary(new()))));       // TODO: 仮実装のためちゃんと実装
 
             StartGame();
         }
@@ -160,7 +163,9 @@ namespace RhAImers.Core
             CurrentState = GameState.BattleStart;
             var currentSession = new BattleSession(MAX_TURN);                                           // バトルセッションの生成 TODO: MaxTurnを設定から取得するようにする
 
+            Debug.Log("here start");
             for (int turn = 0; turn < settings.MaxTurn; turn++) {
+                Debug.Log($"here turn:{turn}");
                 // セットアップ
                 var currentContext = currentSession.GenerateBattleContext();                            // バトルコンテキストの生成
 
@@ -192,6 +197,7 @@ namespace RhAImers.Core
                     cts = null;
                 }
                 _uiManager.ShowOpponentVerse(opponentVerse);                                            // 相手バースの表示
+                Debug.Log(opponentVerse.Text);
 
 
                 // ライム入力
@@ -254,6 +260,7 @@ namespace RhAImers.Core
                 );                                                                                      // ターンデータの生成
                 currentSession.AddTurn(turnData);                                                       // ターンデータの追加
             }
+            Debug.Log("here end");
 
             // 得点の計算
             CurrentState = GameState.Scoring;
