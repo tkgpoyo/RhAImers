@@ -248,6 +248,8 @@ namespace RhAImers.Core
                 }
                 _uiManager.ShowGeneratedVerse(playerVerse);                                             // プレイヤーバースの表示
 
+                await UniTask.Delay(3000); // TODO: プレイヤーバース表示時間の調整(UIManagerのほうがいいかも？)
+
                 // ターンデータの追加
                 CurrentState = GameState.TurnEnd;
                 var turnData = new TurnData(
