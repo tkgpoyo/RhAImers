@@ -135,9 +135,10 @@ namespace RhAImers.Debugging
             _isWaitingForSubmit = true;
             _remainingTime = _inputTimeLimitSec;
 
-            Verse opponentVerse = CreateOpponentVerse(_currentTurnIndex);
+            // 相手バースはGameManager側のLLM生成結果を表示する想定です。
+            // このデバッグスターターでは、固定のテスト用相手バースは表示しません。
+            _uiManager?.ShowOpponentVerseLoading();
 
-            _uiManager?.ShowOpponentVerse(opponentVerse);
             _uiManager?.ShowInputTimer(_inputTimeLimitSec);
             _uiManager?.ShowGeneratedVerse(new Verse(
                 $"{_currentTurnIndex + 1}ターン目：ライムを入力してください",
@@ -145,32 +146,6 @@ namespace RhAImers.Debugging
             ));
 
             _rhymeInputController?.StartInput();
-        }
-
-        private Verse CreateOpponentVerse(int turnIndex)
-        {
-            string text;
-
-            switch (turnIndex)
-            {
-                case 0:
-                    text = "1ターン目\n俺の[[ライム]]が響くこのステージ\n君の【スタイル】で返してみな";
-                    break;
-
-                case 1:
-                    text = "2ターン目\nまだまだ続くこの[[バトル]]\n次の【言葉】で流れを変えろ";
-                    break;
-
-                case 2:
-                    text = "3ターン目\n最後に決めろ[[フロウ]]と[[パンチライン]]\nここで【勝負】を終わらせろ";
-                    break;
-
-                default:
-                    text = $"{turnIndex + 1}ターン目\nテスト用の[[相手バース]]です";
-                    break;
-            }
-
-            return new Verse(text, new List<VerseHighlight>());
         }
 
         private void HandleRhymesSubmitted(IReadOnlyList<string> rhymes)
