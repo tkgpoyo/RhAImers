@@ -105,3 +105,7 @@ InitTestScene*.unity*
 
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+
+# ADD 2026/07/04 ota API Key Config
+/[aA]ssets/RhAImers/[cC]onfigs/ApiKeyConfig.asset
+/[aA]ssets/RhAImers/[cC]onfigs/ApiKeyConfig.asset.meta
