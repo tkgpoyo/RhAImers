@@ -38,7 +38,7 @@ namespace RhAImers.Core
         private void Awake()
         {
             _verseGenerationService = new FixedVerseGenerationService();                                                                    // TODO: これでいいの？
-            _scoreCalculator = new ScoreCalculator(new(new()), new(new(LlmClient.API_KEY_SAMPLE), new(new RhymeDictionary(new()))));        // TODO: 仮実装のためちゃんと実装
+            _scoreCalculator = new ScoreCalculator(new(new()), new(LlmClient.CreateFromEnvironment(), new(new RhymeDictionary(new()))));        // TODO: 仮実装のためちゃんと実装
 
             StartGame();
         }
@@ -258,7 +258,7 @@ namespace RhAImers.Core
             // 得点の計算
             CurrentState = GameState.Scoring;
             _uiManager.ShowScoringLoading();                                                            // 得点計算中のUI表示
-            var scores = _scoreCalculator.Calculate(currentSession.Turns);                              // TODO: 非同期のほうがいい
+            var scores = await _scoreCalculator.Calculate(currentSession.Turns);                              // TODO: 非同期のほうがいい
 
             // 結果の表示
             CurrentState = GameState.Result;

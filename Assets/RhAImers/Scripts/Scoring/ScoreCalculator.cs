@@ -14,14 +14,14 @@ namespace RhAImers.Scoring
             _relevanceEvaluator = relevanceEvaluator;
         }
 
-        public IReadOnlyList<TurnScore> Calculate(IReadOnlyList<TurnData> turns)
+        public async Cysharp.Threading.Tasks.UniTask<IReadOnlyList<TurnScore>> Calculate(IReadOnlyList<TurnData> turns)
         {
             var scores = new List<TurnScore>();
             foreach (var turn in turns)
             {
                 var rhymeCount = turn.InputRhymes.Count;
                 var averageHardness = _hardnessEvaluator.Evaluate(turn.InputRhymes);
-                var relevanceCount = _relevanceEvaluator.Evaluate(turn.InputRhymes, turn.OpponentVerse.Text).Count;
+                var relevanceCount = await _relevanceEvaluator.Evaluate(turn.InputRhymes, turn.OpponentVerse.Text);
                 scores.Add(new TurnScore(rhymeCount, averageHardness, relevanceCount));
             }
 
