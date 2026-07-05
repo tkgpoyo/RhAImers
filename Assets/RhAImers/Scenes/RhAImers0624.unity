@@ -623,7 +623,6 @@ MonoBehaviour:
   _backgroundImage: {fileID: 675730399}
   _battleBackgroundSprite: {fileID: -3154988295603801538, guid: f217d43fd601f394c8ae16c6d02a83ed, type: 3}
   _backgroundColor: {r: 1, g: 1, b: 1, a: 1}
-  _showBattleStartSignalOnStart: 1
   _battleStartSignalGroup: {fileID: 471496421}
   _battleStartSignalImage: {fileID: 471496424}
   _battleStartSignalCanvasGroup: {fileID: 471496423}
@@ -1047,7 +1046,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &483979702
 RectTransform:
   m_ObjectHideFlags: 0
