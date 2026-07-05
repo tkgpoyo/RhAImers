@@ -190,7 +190,8 @@ namespace RhAImers.UI
             SetStatus("Opponent Verse");
             SetResultVisible(false);
 
-            string text = verse == null ? string.Empty : FormatVerseText(verse.Text);
+            //string text = verse == null ? string.Empty : FormatVerseText(verse.Text);
+            string text = verse == null ? string.Empty : FormatVerseTextWithHighlights(verse.Text, verse.Highlights);
             SetText(_opponentVerseText, text);
         }
 
@@ -218,7 +219,8 @@ namespace RhAImers.UI
             SetStatus("Generated Verse");
             SetResultVisible(false);
 
-            string text = verse == null ? string.Empty : FormatVerseText(verse.Text);
+            //string text = verse == null ? string.Empty : FormatVerseText(verse.Text);
+            string text = verse == null ? string.Empty : FormatVerseTextWithHighlights(verse.Text, verse.Highlights);
             SetText(_generatedVerseText, text);
         }
 
@@ -947,6 +949,15 @@ namespace RhAImers.UI
             return $"{minutes:00}:{seconds:00}";
         }
 
+        /// <summary>
+        /// テキストのハイライト処理を行います．
+        /// </summary>
+        /// <remarks>
+        /// プロンプトの与え方を変更し，[[]]で囲む処理を削除したため，このメソッドは非推奨となりました．
+        /// </remarks>
+        /// <param name="rawText"></param>
+        /// <returns></returns>
+        [Obsolete]
         private string FormatVerseText(string rawText)
         {
             if (string.IsNullOrEmpty(rawText))
@@ -968,6 +979,33 @@ namespace RhAImers.UI
                 $"<b><color={HighlightColor}>$1</color></b>"
             );
 
+            return text;
+        }
+
+        private string FormatVerseTextWithHighlights(string rawText, IReadOnlyList<VerseHighlight> highlights)
+        {
+            if (string.IsNullOrEmpty(rawText)) {
+                return string.Empty;
+            }
+            string text = EscapeRichText(rawText);
+            if (highlights != null && highlights.Count > 0) {
+                var sb = new StringBuilder(text);
+                int offset = 0;
+                foreach (var highlight in highlights) {
+                    int startIndex = highlight.StartIndex + offset;
+                    int length = highlight.Length;
+                    if (startIndex < 0 || startIndex >= sb.Length || length <= 0) {
+                        continue;
+                    }
+                    int endIndex = Mathf.Min(startIndex + length, sb.Length);
+                    string highlightedPart = sb.ToString(startIndex, endIndex - startIndex);
+                    string replacement = $"<b><color={HighlightColor}>{highlightedPart}</color></b>";
+                    sb.Remove(startIndex, endIndex - startIndex);
+                    sb.Insert(startIndex, replacement);
+                    offset += replacement.Length - (endIndex - startIndex);
+                }
+                text = sb.ToString();
+            }
             return text;
         }
 

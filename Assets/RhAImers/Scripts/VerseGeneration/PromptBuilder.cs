@@ -20,11 +20,12 @@ namespace RhAImers.VerseGeneration
         /// Builds a prompt that makes the LLM generate an opponent (AI) verse.
         /// The verse should challenge the player and use the supplied rhyme words.
         /// </summary>
-        public string BuildOpponentVersePrompt(BattleContext context)
+        public string BuildOpponentVersePrompt(BattleContext context, out IReadOnlyList<string> words)
         {
             var rhymeKey = SelectRhymeKey();
-            var words    = _rhymeDictionary.GetRandomWords(rhymeKey, 4);
+            words    = _rhymeDictionary.GetRandomWords(rhymeKey, 4);
             var wordList = words.Any() ? string.Join("・", words) : "(韻語なし)";
+            Debug.Log($"rhymeKey: {rhymeKey}, words: {words}");
 
             var sb = new StringBuilder();
             sb.Append(
@@ -35,9 +36,7 @@ namespace RhAImers.VerseGeneration
 -以下の韻語を各行の最後で使用すること: ")
               .AppendLine(wordList)
               .Append(
-@" -使用した韻語は[[]] で囲むこと
-- 韻語以外の単語には[[]]を付けないこと
-- プレイヤーへの挑発・挑戦を込めた内容にすること
+@" - プレイヤーへの挑発・挑戦を込めた内容にすること
 - 自分の強さを誇示する内容にすること
 - 韻語は単独で用いずに何かしらの単語を付けること
 - 韻語に付加した単語と韻語の間には助詞を入れてください
@@ -81,8 +80,6 @@ namespace RhAImers.VerseGeneration
         条件:
 
             -韻語を各行の最後で使用すること
-            - 使用した韻語は[[]] で囲むこと
-            - 韻語以外の単語には[[]]を付けないこと
             - 相手への挑発・挑戦を込めた内容にすること
             - 自分の強さを誇示する内容にすること
             - 韻語は単独で用いずに何かしらの単語を付けること

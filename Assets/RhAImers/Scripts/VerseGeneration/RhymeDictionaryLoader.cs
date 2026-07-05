@@ -20,7 +20,7 @@ namespace RhAImers.VerseGeneration
             return LoadFromJson(textAsset.text);
         }
 
-        public static IRhymeDictionary LoadFromJson(string json)
+        private static IRhymeDictionary LoadFromJson(string json)
         {
             if (string.IsNullOrWhiteSpace(json))
             {
