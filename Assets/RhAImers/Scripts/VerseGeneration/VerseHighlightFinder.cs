@@ -15,7 +15,8 @@ public static class VerseHighlightFinder
         var highlights = new List<VerseHighlight>();
         if (string.IsNullOrEmpty(text) || rhymes == null) return highlights;
 
-        foreach (var rhyme in rhymes) {
+        var rhymeSet = new HashSet<string>(rhymes, StringComparer.OrdinalIgnoreCase);
+        foreach (var rhyme in rhymeSet) {
             if (string.IsNullOrEmpty(rhyme)) continue;
 
             var searchFrom = 0;
