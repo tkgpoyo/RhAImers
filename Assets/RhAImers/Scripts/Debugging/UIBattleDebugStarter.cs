@@ -11,16 +11,24 @@ namespace RhAImers.Debugging
     {
         private static UIBattleDebugStarter _activeInstance;
 
+        [Header("References")]
         [SerializeField] private UIManager _uiManager;
         [SerializeField] private RhymeInputController _rhymeInputController;
+
+        [Header("Debug Battle")]
         [SerializeField] private int _maxTurn = 3;
         [SerializeField] private int _inputTimeLimitSec = 30;
         [SerializeField] private float _nextTurnDelaySec = 1.5f;
+        [SerializeField] private float _resultDelaySec = 2.5f;
         [SerializeField] private bool _suppressGameManagerSubmitRequested = true;
+
+        [Header("UI Presentation Wait")]
+        [SerializeField] private bool _waitForUiPresentationBeforeTimer = true;
 
         private int _currentTurnIndex;
         private float _remainingTime;
         private bool _isWaitingForSubmit;
+        private Coroutine _turnStartCoroutine;
         private Coroutine _nextTurnCoroutine;
 
         private void Awake()
@@ -65,6 +73,7 @@ namespace RhAImers.Debugging
                 _uiManager.RetrySelected -= HandleRetrySelected;
             }
 
+            StopTurnStartCoroutine();
             StopNextTurnCoroutine();
             _isWaitingForSubmit = false;
 
@@ -119,6 +128,7 @@ namespace RhAImers.Debugging
 
         private void RestartDebugBattle()
         {
+            StopTurnStartCoroutine();
             StopNextTurnCoroutine();
 
             _currentTurnIndex = 0;
@@ -130,22 +140,32 @@ namespace RhAImers.Debugging
 
         private void BeginTurn()
         {
+            StopTurnStartCoroutine();
             StopNextTurnCoroutine();
 
-            _isWaitingForSubmit = true;
+            _isWaitingForSubmit = false;
             _remainingTime = _inputTimeLimitSec;
 
-            // 相手バースはGameManager側のLLM生成結果を表示する想定です。
-            // このデバッグスターターでは、固定のテスト用相手バースは表示しません。
-            _uiManager?.ShowOpponentVerseLoading();
+            _turnStartCoroutine = StartCoroutine(BeginTurnRoutine());
+        }
 
+        private IEnumerator BeginTurnRoutine()
+        {
+            _uiManager?.ShowOpponentVerseLoading();
             _uiManager?.ShowInputTimer(_inputTimeLimitSec);
-            _uiManager?.ShowGeneratedVerse(new Verse(
-                $"{_currentTurnIndex + 1}ターン目：ライムを入力してください",
-                new List<VerseHighlight>()
-            ));
+
+            if (_waitForUiPresentationBeforeTimer && _uiManager != null)
+            {
+                yield return _uiManager.WaitUntilInputPresentationReady();
+            }
+
+            _remainingTime = _inputTimeLimitSec;
+            _uiManager?.ShowInputTimer(_inputTimeLimitSec);
 
             _rhymeInputController?.StartInput();
+
+            _isWaitingForSubmit = true;
+            _turnStartCoroutine = null;
         }
 
         private void HandleRhymesSubmitted(IReadOnlyList<string> rhymes)
@@ -176,7 +196,7 @@ namespace RhAImers.Debugging
 
             if (_currentTurnIndex + 1 >= _maxTurn)
             {
-                ShowAllTurnsFinished();
+                _nextTurnCoroutine = StartCoroutine(ShowResultAfterDelay());
                 return;
             }
 
@@ -185,7 +205,7 @@ namespace RhAImers.Debugging
 
         private IEnumerator BeginNextTurnAfterDelay()
         {
-            yield return new WaitForSeconds(_nextTurnDelaySec);
+            yield return new WaitForSecondsRealtime(_nextTurnDelaySec);
 
             _currentTurnIndex++;
             BeginTurn();
@@ -193,12 +213,32 @@ namespace RhAImers.Debugging
             _nextTurnCoroutine = null;
         }
 
+        private IEnumerator ShowResultAfterDelay()
+        {
+            yield return new WaitForSecondsRealtime(Mathf.Max(0f, _resultDelaySec));
+
+            ShowAllTurnsFinished();
+
+            _nextTurnCoroutine = null;
+        }
+
         private void ShowAllTurnsFinished()
         {
             _isWaitingForSubmit = false;
-            StopNextTurnCoroutine();
+            StopTurnStartCoroutine();
 
             _uiManager?.ShowResult(default(BattleResult));
+        }
+
+        private void StopTurnStartCoroutine()
+        {
+            if (_turnStartCoroutine == null)
+            {
+                return;
+            }
+
+            StopCoroutine(_turnStartCoroutine);
+            _turnStartCoroutine = null;
         }
 
         private void StopNextTurnCoroutine()

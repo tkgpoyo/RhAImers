@@ -35,6 +35,8 @@ namespace RhAImers.Input
 
         public event Action SubmitRequested;
         public event Action<IReadOnlyList<string>> Submitted;
+        public event Action<string> RhymeAdded;
+        public event Action<string> RhymeRemoved;
 
         public IReadOnlyList<string> Rhymes => _rhymes.AsReadOnly();
 
@@ -153,8 +155,16 @@ namespace RhAImers.Input
                 return;
             }
 
-            _rhymes.Remove(word.Trim());
+            string trimmedWord = word.Trim();
+            bool removed = _rhymes.Remove(trimmedWord);
+
+            if (!removed)
+            {
+                return;
+            }
+
             _uiManager?.ShowInputRhymes(_rhymes);
+            RhymeRemoved?.Invoke(trimmedWord);
 
             if (_refocusInputAfterAdd)
             {
@@ -169,8 +179,10 @@ namespace RhAImers.Input
                 return;
             }
 
+            string removedWord = _rhymes[index];
             _rhymes.RemoveAt(index);
             _uiManager?.ShowInputRhymes(_rhymes);
+            RhymeRemoved?.Invoke(removedWord);
 
             if (_refocusInputAfterAdd)
             {
@@ -273,6 +285,7 @@ namespace RhAImers.Input
             }
 
             _uiManager?.ShowInputRhymes(_rhymes);
+            RhymeAdded?.Invoke(trimmedWord);
 
             ClearInputField();
 
