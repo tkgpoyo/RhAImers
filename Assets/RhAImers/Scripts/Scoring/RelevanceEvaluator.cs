@@ -16,13 +16,27 @@ namespace RhAImers.Scoring
             _promptBuilder = promptBuilder;
         }
 
-        // TODO: 戻り値はintでいいかも？わからないが...要検討
-        public async UniTask<IReadOnlyList<string>> EvaluateAsync(IReadOnlyList<string> words, string opponentVerseText)
+        public async UniTask<int> EvaluateAsync(IReadOnlyList<string> words, string opponentVerseText)
         {
             var prompt = _promptBuilder.BuildRelevancePrompt(words, opponentVerseText);
             var response = await _client.Request(prompt);
-            // TODO: 頑張って関連度計算
-            return new List<string>();
+
+            if (string.IsNullOrWhiteSpace(response) || response.ToLower().Contains("null"))
+            {
+                return 0;
+            }
+
+            var match = System.Text.RegularExpressions.Regex.Match(response, @"\{([^}]*)\}");
+            if (match.Success)
+            {
+                var content = match.Groups[1].Value;
+                if (string.IsNullOrWhiteSpace(content)) return 0;
+                
+                var items = content.Split(',');
+                return items.Length;
+            }
+
+            return 0;
         }
     }
 }
