@@ -11,16 +11,24 @@ namespace RhAImers.Debugging
     {
         private static UIBattleDebugStarter _activeInstance;
 
+        [Header("References")]
         [SerializeField] private UIManager _uiManager;
         [SerializeField] private RhymeInputController _rhymeInputController;
+
+        [Header("Debug Battle")]
         [SerializeField] private int _maxTurn = 3;
         [SerializeField] private int _inputTimeLimitSec = 30;
         [SerializeField] private float _nextTurnDelaySec = 1.5f;
+        [SerializeField] private float _resultDelaySec = 2.5f;
         [SerializeField] private bool _suppressGameManagerSubmitRequested = true;
+
+        [Header("UI Presentation Wait")]
+        [SerializeField] private bool _waitForUiPresentationBeforeTimer = true;
 
         private int _currentTurnIndex;
         private float _remainingTime;
         private bool _isWaitingForSubmit;
+        private Coroutine _turnStartCoroutine;
         private Coroutine _nextTurnCoroutine;
 
         private void Awake()
@@ -65,6 +73,7 @@ namespace RhAImers.Debugging
                 _uiManager.RetrySelected -= HandleRetrySelected;
             }
 
+            StopTurnStartCoroutine();
             StopNextTurnCoroutine();
             _isWaitingForSubmit = false;
 
@@ -119,6 +128,7 @@ namespace RhAImers.Debugging
 
         private void RestartDebugBattle()
         {
+            StopTurnStartCoroutine();
             StopNextTurnCoroutine();
 
             _currentTurnIndex = 0;
@@ -130,47 +140,33 @@ namespace RhAImers.Debugging
 
         private void BeginTurn()
         {
+            StopTurnStartCoroutine();
             StopNextTurnCoroutine();
 
-            _isWaitingForSubmit = true;
+            _isWaitingForSubmit = false;
             _remainingTime = _inputTimeLimitSec;
 
-            Verse opponentVerse = CreateOpponentVerse(_currentTurnIndex);
-
-            _uiManager?.ShowOpponentVerse(opponentVerse);
-            _uiManager?.ShowInputTimer(_inputTimeLimitSec);
-            _uiManager?.ShowGeneratedVerse(new Verse(
-                $"{_currentTurnIndex + 1}ターン目：ライムを入力してください",
-                new List<VerseHighlight>()
-            ));
-
-            _rhymeInputController?.StartInput();
+            _turnStartCoroutine = StartCoroutine(BeginTurnRoutine());
         }
 
-        private Verse CreateOpponentVerse(int turnIndex)
+        private IEnumerator BeginTurnRoutine()
         {
-            string text;
+            _uiManager?.ShowOpponentVerseLoading();
+            _uiManager?.ShowInputTimer(_inputTimeLimitSec);
 
-            switch (turnIndex)
+            if (_waitForUiPresentationBeforeTimer && _uiManager != null)
             {
-                case 0:
-                    text = "1ターン目\n俺の[[ライム]]が響くこのステージ\n君の【スタイル】で返してみな";
-                    break;
-
-                case 1:
-                    text = "2ターン目\nまだまだ続くこの[[バトル]]\n次の【言葉】で流れを変えろ";
-                    break;
-
-                case 2:
-                    text = "3ターン目\n最後に決めろ[[フロウ]]と[[パンチライン]]\nここで【勝負】を終わらせろ";
-                    break;
-
-                default:
-                    text = $"{turnIndex + 1}ターン目\nテスト用の[[相手バース]]です";
-                    break;
+                //yield return _uiManager.WaitUntilInputPresentationReady();
+                yield break;        // 2026/07/05 ota コンパイル通すために仮で書いてる
             }
 
-            return new Verse(text, new List<VerseHighlight>());
+            _remainingTime = _inputTimeLimitSec;
+            _uiManager?.ShowInputTimer(_inputTimeLimitSec);
+
+            _rhymeInputController?.StartInput();
+
+            _isWaitingForSubmit = true;
+            _turnStartCoroutine = null;
         }
 
         private void HandleRhymesSubmitted(IReadOnlyList<string> rhymes)
@@ -201,7 +197,7 @@ namespace RhAImers.Debugging
 
             if (_currentTurnIndex + 1 >= _maxTurn)
             {
-                ShowAllTurnsFinished();
+                _nextTurnCoroutine = StartCoroutine(ShowResultAfterDelay());
                 return;
             }
 
@@ -210,7 +206,7 @@ namespace RhAImers.Debugging
 
         private IEnumerator BeginNextTurnAfterDelay()
         {
-            yield return new WaitForSeconds(_nextTurnDelaySec);
+            yield return new WaitForSecondsRealtime(_nextTurnDelaySec);
 
             _currentTurnIndex++;
             BeginTurn();
@@ -218,12 +214,32 @@ namespace RhAImers.Debugging
             _nextTurnCoroutine = null;
         }
 
+        private IEnumerator ShowResultAfterDelay()
+        {
+            yield return new WaitForSecondsRealtime(Mathf.Max(0f, _resultDelaySec));
+
+            ShowAllTurnsFinished();
+
+            _nextTurnCoroutine = null;
+        }
+
         private void ShowAllTurnsFinished()
         {
             _isWaitingForSubmit = false;
-            StopNextTurnCoroutine();
+            StopTurnStartCoroutine();
 
             _uiManager?.ShowResult(default(BattleResult));
+        }
+
+        private void StopTurnStartCoroutine()
+        {
+            if (_turnStartCoroutine == null)
+            {
+                return;
+            }
+
+            StopCoroutine(_turnStartCoroutine);
+            _turnStartCoroutine = null;
         }
 
         private void StopNextTurnCoroutine()

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using RhAImers.Battle;
 using RhAImers.VerseGeneration;
 
@@ -15,7 +16,7 @@ namespace RhAImers.Scoring
             _promptBuilder = promptBuilder;
         }
 
-        public async Cysharp.Threading.Tasks.UniTask<int> Evaluate(IReadOnlyList<string> words, string opponentVerseText)
+        public async UniTask<int> EvaluateAsync(IReadOnlyList<string> words, string opponentVerseText)
         {
             var prompt = _promptBuilder.BuildRelevancePrompt(words, opponentVerseText);
             var response = await _client.Request(prompt);

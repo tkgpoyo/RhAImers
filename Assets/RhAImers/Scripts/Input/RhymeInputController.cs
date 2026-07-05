@@ -20,14 +20,23 @@ namespace RhAImers.Input
 
         [Header("Input Focus")]
         [SerializeField] private bool _refocusInputAfterAdd = true;
+        [SerializeField] private bool _keepInputFieldFocused = true;
+
+        [Header("Debug")]
+        [SerializeField] private bool _logRhymeInputDebug = false;
 
         private readonly List<string> _rhymes = new();
 
         private bool _allowInput;
         private Coroutine _refocusCoroutine;
 
+        private int _lastAddedFrame = -1;
+        private string _lastAddedWord = string.Empty;
+
         public event Action SubmitRequested;
         public event Action<IReadOnlyList<string>> Submitted;
+        public event Action<string> RhymeAdded;
+        public event Action<string> RhymeRemoved;
 
         public IReadOnlyList<string> Rhymes => _rhymes.AsReadOnly();
 
@@ -50,6 +59,7 @@ namespace RhAImers.Input
         {
             if (_rhymeInputField != null)
             {
+                _rhymeInputField.onSubmit.AddListener(HandleInputSubmitted);
                 _rhymeInputField.onEndEdit.AddListener(HandleInputEnded);
             }
 
@@ -57,12 +67,18 @@ namespace RhAImers.Input
             {
                 _submitButton.onClick.AddListener(SubmitInput);
             }
+
+            if (_uiManager != null)
+            {
+                _uiManager.InputRhymeRemoveAtRequested += HandleInputRhymeRemoveAtRequested;
+            }
         }
 
         private void OnDisable()
         {
             if (_rhymeInputField != null)
             {
+                _rhymeInputField.onSubmit.RemoveListener(HandleInputSubmitted);
                 _rhymeInputField.onEndEdit.RemoveListener(HandleInputEnded);
             }
 
@@ -71,7 +87,30 @@ namespace RhAImers.Input
                 _submitButton.onClick.RemoveListener(SubmitInput);
             }
 
+            if (_uiManager != null)
+            {
+                _uiManager.InputRhymeRemoveAtRequested -= HandleInputRhymeRemoveAtRequested;
+            }
+
             StopRefocusCoroutine();
+        }
+
+        private void LateUpdate()
+        {
+            if (!_keepInputFieldFocused)
+            {
+                return;
+            }
+
+            if (!_allowInput || _rhymeInputField == null || !_rhymeInputField.interactable)
+            {
+                return;
+            }
+
+            if (!_rhymeInputField.isFocused || IsAnotherObjectSelected())
+            {
+                FocusInputField();
+            }
         }
 
         public void SetNotifySubmitRequested(bool notify)
@@ -85,6 +124,8 @@ namespace RhAImers.Input
 
             _allowInput = true;
             _rhymes.Clear();
+            _lastAddedFrame = -1;
+            _lastAddedWord = string.Empty;
 
             _uiManager?.ShowInputRhymes(_rhymes);
 
@@ -104,20 +145,7 @@ namespace RhAImers.Input
 
         public void AddRhyme(string word)
         {
-            if (!_allowInput || string.IsNullOrWhiteSpace(word))
-            {
-                return;
-            }
-
-            _rhymes.Add(word.Trim());
-            _uiManager?.ShowInputRhymes(_rhymes);
-
-            ClearInputField();
-
-            if (_refocusInputAfterAdd)
-            {
-                RequestFocusInputFieldNextFrame();
-            }
+            TryAddRhyme(word);
         }
 
         public void RemoveRhyme(string word)
@@ -127,8 +155,39 @@ namespace RhAImers.Input
                 return;
             }
 
-            _rhymes.Remove(word.Trim());
+            string trimmedWord = word.Trim();
+            bool removed = _rhymes.Remove(trimmedWord);
+
+            if (!removed)
+            {
+                return;
+            }
+
             _uiManager?.ShowInputRhymes(_rhymes);
+            RhymeRemoved?.Invoke(trimmedWord);
+
+            if (_refocusInputAfterAdd)
+            {
+                RequestFocusInputFieldNextFrame();
+            }
+        }
+
+        public void RemoveRhymeAt(int index)
+        {
+            if (!_allowInput || index < 0 || index >= _rhymes.Count)
+            {
+                return;
+            }
+
+            string removedWord = _rhymes[index];
+            _rhymes.RemoveAt(index);
+            _uiManager?.ShowInputRhymes(_rhymes);
+            RhymeRemoved?.Invoke(removedWord);
+
+            if (_refocusInputAfterAdd)
+            {
+                RequestFocusInputFieldNextFrame();
+            }
         }
 
         public IReadOnlyList<string> Submit()
@@ -174,14 +233,19 @@ namespace RhAImers.Input
             }
         }
 
+        private void HandleInputSubmitted(string word)
+        {
+            TryAddRhyme(word);
+        }
+
         private void HandleInputEnded(string word)
         {
-            if (!_allowInput)
-            {
-                return;
-            }
+            TryAddRhyme(word);
+        }
 
-            AddRhyme(word);
+        private void HandleInputRhymeRemoveAtRequested(int index)
+        {
+            RemoveRhymeAt(index);
         }
 
         private void AddCurrentInputText()
@@ -191,7 +255,44 @@ namespace RhAImers.Input
                 return;
             }
 
-            AddRhyme(_rhymeInputField.text);
+            TryAddRhyme(_rhymeInputField.text);
+        }
+
+        private void TryAddRhyme(string word)
+        {
+            if (!_allowInput || string.IsNullOrWhiteSpace(word))
+            {
+                RequestFocusInputFieldNextFrame();
+                return;
+            }
+
+            string trimmedWord = word.Trim();
+
+            if (_lastAddedFrame == Time.frameCount && _lastAddedWord == trimmedWord)
+            {
+                RequestFocusInputFieldNextFrame();
+                return;
+            }
+
+            _lastAddedFrame = Time.frameCount;
+            _lastAddedWord = trimmedWord;
+
+            _rhymes.Add(trimmedWord);
+
+            if (_logRhymeInputDebug)
+            {
+                Debug.Log($"Rhyme added: {trimmedWord}. Count={_rhymes.Count}");
+            }
+
+            _uiManager?.ShowInputRhymes(_rhymes);
+            RhymeAdded?.Invoke(trimmedWord);
+
+            ClearInputField();
+
+            if (_refocusInputAfterAdd)
+            {
+                RequestFocusInputFieldNextFrame();
+            }
         }
 
         private void ClearInputField()
@@ -202,6 +303,17 @@ namespace RhAImers.Input
             }
 
             _rhymeInputField.SetTextWithoutNotify(string.Empty);
+        }
+
+        private bool IsAnotherObjectSelected()
+        {
+            if (EventSystem.current == null || _rhymeInputField == null)
+            {
+                return false;
+            }
+
+            GameObject selectedObject = EventSystem.current.currentSelectedGameObject;
+            return selectedObject != null && selectedObject != _rhymeInputField.gameObject;
         }
 
         private void RequestFocusInputFieldNextFrame()

@@ -1,3 +1,4 @@
+using Cysharp.Threading.Tasks;
 using System;
 using System.Net.Http;
 using System.Text;
@@ -12,18 +13,19 @@ namespace RhAImers.VerseGeneration
     /// </summary>
     public class LlmClient
     {
-        public const string API_KEY_SAMPLE = "YOUR_API_KEY_HERE";
         private static readonly HttpClient Http = new HttpClient();
 
         private const string EndpointTemplate =
             "https://generativelanguage.googleapis.com/v1beta/models/{0}:generateContent?key={1}";
 
-        private const string DefaultModel = "gemini-2.5-flash-lite";
+        private const string DefaultModel = "gemini-3.1-flash-lite";
+
+        private const string ApiKeyEnvironmentVariable = "GemKey";
 
         private readonly string _apiKey;
         private readonly string _model;
 
-        public LlmClient(string apiKey, string model = DefaultModel)
+        private LlmClient(string apiKey, string model = DefaultModel)
         {
             if (string.IsNullOrWhiteSpace(apiKey))
                 throw new ArgumentException("API key must not be empty.", nameof(apiKey));
@@ -31,31 +33,41 @@ namespace RhAImers.VerseGeneration
             _model  = model;
         }
 
-        public string Request(string prompt)
+        /// <summary>
+        /// Builds a client using the API key from the <c>GEMINI_API_KEY</c>
+        /// environment variable, so the key never has to live in source control
+        /// or a serialized asset.
+        /// </summary>
+        public static LlmClient CreateFromEnvironment(string model = DefaultModel)
+        {
+            //var apiKey = Environment.GetEnvironmentVariable(ApiKeyEnvironmentVariable, EnvironmentVariableTarget.User);
+            var apiKey = ApiKeyConfig.Instance.ApiKey;          // 2026/07/04 ota Change to use ScriptableObject for API key storage instead of environment variable
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                throw new InvalidOperationException(
+                    $"Environment variable '{ApiKeyEnvironmentVariable}' is not set. " +
+                    "Set it to your Gemini API key before starting the game.");
+            }
+
+            return new LlmClient(apiKey, model);
+        }
+
+        public async UniTask<string> Request(string prompt)
         {
             var url     = string.Format(EndpointTemplate, _model, _apiKey);
             var body    = BuildRequestBody(prompt);
-            var content = new StringContent(body, Encoding.UTF8, "application/json");
+            var content = new StringContent(body, Encoding.UTF8, "text/plain");
 
             using (var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = content })
             {
                 HttpResponseMessage response;
                 string responseBody;
-                try
-                {
-                    response     = Http.SendAsync(request).GetAwaiter().GetResult();
-                    responseBody = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogError($"[LlmClient] HTTP request failed: {ex.Message}");
-                    return string.Empty;
-                }
+                response = await Http.SendAsync(request);
+                responseBody = await response.Content.ReadAsStringAsync();
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    Debug.LogError($"[LlmClient] API error {(int)response.StatusCode}: {responseBody}");
-                    return string.Empty;
+                    throw new HttpRequestException($"[LlmClient] API error {(int)response.StatusCode}: {responseBody}");
                 }
 
                 return ExtractText(responseBody);
