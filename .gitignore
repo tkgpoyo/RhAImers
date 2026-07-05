@@ -109,3 +109,5 @@ InitTestScene*.unity*
 # ADD 2026/07/04 ota API Key Config
 /[aA]ssets/Resources/[cC]onfigs/ApiKeyConfig.asset
 /[aA]ssets/Resources/[cC]onfigs/ApiKeyConfig.asset.meta
+
+/**/.DS_Store

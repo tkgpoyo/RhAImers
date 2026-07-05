@@ -31,7 +31,7 @@ namespace RhAImers.Tests.EditMode.Scoring
             var words = new List<string> { "笹子","赤子","卵"};
             var opponentVerse = "俺が立つこの場所、握るぜマイクロフォン、フロアを沸かすぜ";
 
-            var result = await _evaluator.Evaluate(words, opponentVerse);
+            var result = await _evaluator.EvaluateAsync(words, opponentVerse);
 
             // 0 になるはず
             // ※PromptBuilder側のプロンプト指示が "{ライム1}" の形式に対応している必要がある
@@ -44,7 +44,7 @@ namespace RhAImers.Tests.EditMode.Scoring
             // 相手のバースに明らかに関連する単語を渡す
             var words = new List<string> { "キング", "リング", "陳腐"  };
             var opponentVerse = "俺が立つこの場所、握るぜマイクロフォン、フロアを沸かすぜ";
-            var result = await _evaluator.Evaluate(words, opponentVerse);
+            var result = await _evaluator.EvaluateAsync(words, opponentVerse);
 
             // 1 以上になるはず
             // ※PromptBuilder側でルール通りのプロンプトが渡される前提
