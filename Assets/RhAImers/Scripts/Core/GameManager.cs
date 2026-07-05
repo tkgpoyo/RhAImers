@@ -45,7 +45,10 @@ namespace RhAImers.Core
             var rhymeDictionary = RhymeDictionaryLoader.LoadFromResources();                                            // ライム辞書
             _verseGenerationService = new LlmVerseGenerationService(_llmClient, new(rhymeDictionary));                  // バース生成サービス
             _scoreCalculator = new ScoreCalculator(new(new()), new(_llmClient, new(rhymeDictionary)));                  // 得点計算クラス
+        }
 
+        private void Start()
+        {
             StartGame();
         }
 
@@ -153,7 +156,7 @@ namespace RhAImers.Core
         {
             // TODO: 仮実装から本実装にする必要がある
             CurrentSettings = new BattleSettings(MAX_TURN, _defaultInputTimeLimitSec, Difficulty.Normal);
-            RunBattleAsync(CurrentSettings).Forget();
+            RunBattleAsync(CurrentSettings).Forget(ex => Debug.LogException(ex));
         }
 
         /// <summary>
@@ -164,7 +167,8 @@ namespace RhAImers.Core
         {
             // バトル開始
             CurrentState = GameState.BattleStart;
-            var currentSession = new BattleSession(MAX_TURN);                                           // バトルセッションの生成 TODO: MaxTurnを設定から取得するようにする
+            var currentSession = new BattleSession(settings.MaxTurn);                                   // バトルセッションの生成 TODO: MaxTurnを設定から取得するようにする
+            await _uiManager.ShowBattleStartSignalAsync();                                              // バトル開始のUI表示
 
             for (int turn = 0; turn < settings.MaxTurn; turn++) {
                 // セットアップ
@@ -174,29 +178,15 @@ namespace RhAImers.Core
                 var cts = new CancellationTokenSource();
                 CurrentState = GameState.OpponentVerse;                                                 // ゲーム状態を「相手バース生成中」に変更
                 _uiManager.ShowOpponentVerseLoading();                                                  // 相手バース生成中のUI表示
-                Verse opponentVerse;
-                try
-                {
-                    opponentVerse = await _verseGenerationService.GenerateOpponentVerseAsync(
-                        currentContext, 
-                        cts.Token
-                    );                                                                                      // 相手バースの取得
-                }
-                catch
-                {
-                    // TODO: API系のエラーのみをここで掴むべし
-                    _verseGenerationService = GetVerseGenerationService(VerseGenerationType.Fixed);
-                    opponentVerse = await _verseGenerationService.GenerateOpponentVerseAsync(
-                        currentContext,
-                        cts.Token
-                    );
-                }
-                finally
-                {
-                    // TODO: 雑な Dispose処理
-                    cts.Dispose();
-                    cts = null;
-                }
+                var opponentVerse = await GenerateWithFallbackAsync(
+                    (service, token) => service.GenerateOpponentVerseAsync(currentContext, token),
+                    cts.Token
+                );                                                                                      // 相手バースの取得
+
+                // TODO: 雑な Dispose処理
+                cts.Dispose();
+                cts = null;
+
                 _uiManager.ShowOpponentVerse(opponentVerse);                                            // 相手バースの表示
                 Debug.Log(opponentVerse.Text);
 
@@ -224,31 +214,15 @@ namespace RhAImers.Core
                 cts = new CancellationTokenSource();
                 CurrentState = GameState.VerseGeneration;
                 _uiManager.ShowGenerationLoading();                                                     // プレイヤーバース生成中のUI表示
-                Verse playerVerse;
-                try
-                {
-                    playerVerse = await _verseGenerationService.GeneratePlayerVerseAsync(
-                        submittedRhymes,
-                        opponentVerse.Text,
-                        cts.Token
-                    );                                                                                      // プレイヤーバースの取得
-                }
-                catch
-                {
-                    // TODO: API系のエラー以外は掴まない
-                    _verseGenerationService = GetVerseGenerationService(VerseGenerationType.Fixed);
-                    playerVerse = await _verseGenerationService.GeneratePlayerVerseAsync(
-                        submittedRhymes,
-                        opponentVerse.Text,
-                        cts.Token
-                    );
-                }
-                finally
-                {
-                    // TODO: 雑な Dispose処理
-                    cts.Dispose();
-                    cts = null;
-                }
+                var playerVerse = await GenerateWithFallbackAsync(
+                    (service, token) => service.GeneratePlayerVerseAsync(submittedRhymes, opponentVerse.Text, token),
+                    cts.Token
+                );
+
+                // TODO: 雑な Dispose処理
+                cts.Dispose();
+                cts = null;
+
                 _uiManager.ShowGeneratedVerse(playerVerse);                                             // プレイヤーバースの表示
 
                 await UniTask.Delay(3000); // TODO: プレイヤーバース表示時間の調整(UIManagerのほうがいいかも？)
@@ -301,13 +275,28 @@ namespace RhAImers.Core
             }
         }
 
-        private IVerseGenerationService GetVerseGenerationService(VerseGenerationType verseGenerationType)
+        private async UniTask<Verse> GenerateWithFallbackAsync(Func<IVerseGenerationService, CancellationToken, UniTask<Verse>> generate, CancellationToken ct)
         {
-            return verseGenerationType switch
+            try {
+                return await generate(_verseGenerationService, ct);
+            }
+            catch {
+                // TODO: API系のエラーのみを掴む
+                _verseGenerationService = GetVerseGenerationService(VerseGenerationType.Fixed);
+                return await generate(_verseGenerationService, ct);
+            }
+
+            /// <summary>
+            /// バース生成方法を指定して、対応する<see cref="IVerseGenerationService"/>を取得します。
+            /// </summary>
+            IVerseGenerationService GetVerseGenerationService(VerseGenerationType verseGenerationType)
             {
-                VerseGenerationType.Fixed => new FixedVerseGenerationService(),
-                _ => throw new NotImplementedException(),
-            };
+                return verseGenerationType switch
+                {
+                    VerseGenerationType.Fixed => new FixedVerseGenerationService(),
+                    _ => throw new NotImplementedException(),
+                };
+            }
         }
     }
 }

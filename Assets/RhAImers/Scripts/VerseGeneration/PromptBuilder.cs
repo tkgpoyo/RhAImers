@@ -25,7 +25,6 @@ namespace RhAImers.VerseGeneration
             var rhymeKey = SelectRhymeKey();
             words    = _rhymeDictionary.GetRandomWords(rhymeKey, 4);
             var wordList = words.Any() ? string.Join("・", words) : "(韻語なし)";
-            Debug.Log($"rhymeKey: {rhymeKey}, words: {words}");
 
             var sb = new StringBuilder();
             sb.Append(

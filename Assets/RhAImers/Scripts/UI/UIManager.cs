@@ -1,8 +1,8 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Text;
-using System.Text.RegularExpressions;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using RhAImers.Battle;
 using UnityEngine;
 using UnityEngine.UI;
@@ -20,6 +20,10 @@ namespace RhAImers.UI
     {
         private const string HighlightColor = "#FFD54F";
 
+        /// <summary>
+        /// バトル画面内でどのグループを表示するかを表す，UIManager内部だけの表示状態．
+        /// GameManagerのGameStateとは別物（ゲーム進行の状態管理はGameManager側の責務）．
+        /// </summary>
         private enum BattlePhase
         {
             Hidden,
@@ -33,7 +37,6 @@ namespace RhAImers.UI
         [SerializeField] private Color _backgroundColor = Color.white;
 
         [Header("Battle Start Signal")]
-        [SerializeField] private bool _showBattleStartSignalOnStart = true;
         [SerializeField] private GameObject _battleStartSignalGroup;
         [SerializeField] private Image _battleStartSignalImage;
         [SerializeField] private CanvasGroup _battleStartSignalCanvasGroup;
@@ -93,11 +96,8 @@ namespace RhAImers.UI
         private readonly List<GameObject> _inputRhymeTabInstances = new();
 
         private BattlePhase _currentPhase = BattlePhase.Hidden;
-        private BattlePhase _pendingPhase = BattlePhase.Input;
-        private bool _phaseAnimationReady;
         private bool _isBattleStartSignalPlaying;
-        private Coroutine _battleStartSignalCoroutine;
-        private Coroutine _inputPresentationReadyCoroutine;
+        private CancellationTokenSource _battleStartSignalCts;
         private Vector2 _battleStartSignalCenterPosition;
 
         public event Action RetrySelected;
@@ -105,8 +105,6 @@ namespace RhAImers.UI
         public event Action BattleStartSignalShown;
         public event Action<BattleUiPanelKind> BattlePanelShown;
         public event Action BattleResultShown;
-
-        public bool IsInputPresentationReady { get; private set; }
 
         private void Awake()
         {
@@ -118,57 +116,89 @@ namespace RhAImers.UI
             ResolvePanelTransitions();
             CapturePanelTransitionVisualStates();
 
-            IsInputPresentationReady = false;
-
-            ApplyPhaseVisibility(BattlePhase.Hidden, false);
+            ApplyPhaseVisibility(BattlePhase.Hidden, animate: false);
             SetResultVisible(false);
-        }
-
-        private void Start()
-        {
-            if (_showBattleStartSignalOnStart && HasBattleStartSignal())
-            {
-                _battleStartSignalCoroutine = StartCoroutine(PlayBattleStartSignalRoutine());
-                return;
-            }
-
-            _phaseAnimationReady = true;
-            ApplyPhaseVisibility(_pendingPhase, true);
         }
 
         private void OnEnable()
         {
-            if (_retryButton != null)
-            {
+            if (_retryButton != null) {
                 _retryButton.onClick.AddListener(HandleRetryButtonClicked);
             }
         }
 
         private void OnDisable()
         {
-            if (_retryButton != null)
-            {
+            if (_retryButton != null) {
                 _retryButton.onClick.RemoveListener(HandleRetryButtonClicked);
             }
 
-            if (_battleStartSignalCoroutine != null)
-            {
-                StopCoroutine(_battleStartSignalCoroutine);
-                _battleStartSignalCoroutine = null;
-            }
-
-            if (_inputPresentationReadyCoroutine != null)
-            {
-                StopCoroutine(_inputPresentationReadyCoroutine);
-                _inputPresentationReadyCoroutine = null;
-            }
+            CancelBattleStartSignal();
         }
 
-        public IEnumerator WaitUntilInputPresentationReady()
+        /// <summary>
+        /// バトル開始演出（合図の表示・スライドイン→ホールド→スライドアウト）を再生します．
+        /// 演出が完了する（またはキャンセルされる）まで待機します．
+        /// </summary>
+        public async UniTask ShowBattleStartSignalAsync()
         {
-            while (!IsInputPresentationReady)
-            {
-                yield return null;
+            CancelBattleStartSignal();
+            _battleStartSignalCts = new CancellationTokenSource();
+            var ct = _battleStartSignalCts.Token;
+
+            SetResultVisible(false);
+
+            if (!HasBattleStartSignal()) {
+                return;
+            }
+
+            try {
+                _isBattleStartSignalPlaying = true;
+                ApplyPhaseVisibility(BattlePhase.Hidden, animate: false);
+                SetBattleStartSignalVisible(true, 1f);
+                _battleStartSignalRectTransform.anchoredPosition = GetBattleStartSignalEnterPosition();
+                BattleStartSignalShown?.Invoke();
+
+                await MoveBattleStartSignalAsync(
+                    GetBattleStartSignalEnterPosition(),
+                    _battleStartSignalCenterPosition,
+                    _battleStartSignalSlideInDuration,
+                    useEaseOut: true,
+                    ct
+                );
+
+                if (_battleStartSignalHoldDuration > 0f) {
+                    await UniTask.Delay(
+                        TimeSpan.FromSeconds(_battleStartSignalHoldDuration),
+                        ignoreTimeScale: true,
+                        cancellationToken: ct
+                    );
+                }
+
+                await MoveBattleStartSignalAsync(
+                    _battleStartSignalCenterPosition,
+                    GetBattleStartSignalExitPosition(),
+                    _battleStartSignalSlideOutDuration,
+                    useEaseOut: false,
+                    ct
+                );
+
+                SetBattleStartSignalVisible(false, 0f);
+                _battleStartSignalRectTransform.anchoredPosition = _battleStartSignalCenterPosition;
+
+                if (_battleStartSignalPostDelay > 0f) {
+                    await UniTask.Delay(
+                        TimeSpan.FromSeconds(_battleStartSignalPostDelay),
+                        ignoreTimeScale: true,
+                        cancellationToken: ct
+                    );
+                }
+            }
+            catch (OperationCanceledException) {
+                // 演出が中断された場合は何もしない
+            }
+            finally {
+                _isBattleStartSignalPlaying = false;
             }
         }
 
@@ -190,7 +220,6 @@ namespace RhAImers.UI
             SetStatus("Opponent Verse");
             SetResultVisible(false);
 
-            //string text = verse == null ? string.Empty : FormatVerseText(verse.Text);
             string text = verse == null ? string.Empty : FormatVerseTextWithHighlights(verse.Text, verse.Highlights);
             SetText(_opponentVerseText, text);
         }
@@ -219,7 +248,6 @@ namespace RhAImers.UI
             SetStatus("Generated Verse");
             SetResultVisible(false);
 
-            //string text = verse == null ? string.Empty : FormatVerseText(verse.Text);
             string text = verse == null ? string.Empty : FormatVerseTextWithHighlights(verse.Text, verse.Highlights);
             SetText(_generatedVerseText, text);
         }
@@ -261,79 +289,49 @@ namespace RhAImers.UI
 
         public void ShowInputPhase()
         {
-            RequestPhase(BattlePhase.Input);
+            ApplyPhaseVisibility(BattlePhase.Input, animate: true);
         }
 
         public void ShowPlayerVersePhase()
         {
-            RequestPhase(BattlePhase.PlayerVerse);
+            ApplyPhaseVisibility(BattlePhase.PlayerVerse, animate: true);
         }
 
         public void HideBattlePhaseGroups()
         {
-            RequestPhase(BattlePhase.Hidden);
+            ApplyPhaseVisibility(BattlePhase.Hidden, animate: true);
         }
 
         public void HideBattlePhaseGroupsImmediate()
         {
-            ApplyPhaseVisibility(BattlePhase.Hidden, false);
-            _pendingPhase = BattlePhase.Hidden;
-        }
-
-        private void RequestPhase(BattlePhase phase)
-        {
-            _pendingPhase = phase;
-
-            if (phase != BattlePhase.Input)
-            {
-                MarkInputPresentationNotReady();
-            }
-
-            if (!_phaseAnimationReady)
-            {
-                if (phase == BattlePhase.Input)
-                {
-                    MarkInputPresentationNotReady();
-                }
-
-                return;
-            }
-
-            ApplyPhaseVisibility(phase, true);
+            ApplyPhaseVisibility(BattlePhase.Hidden, animate: false);
         }
 
         private void ApplyPhaseVisibility(BattlePhase phase, bool animate)
         {
-            if (animate && _currentPhase == phase)
-            {
+            if (animate && _currentPhase == phase) {
                 return;
             }
 
-            switch (phase)
-            {
+            switch (phase) {
                 case BattlePhase.Input:
-                    MarkInputPresentationNotReady();
                     SetGroupVisible(_opponentVerseGroup, _opponentVerseTransition, _opponentVersePanelImage, true, animate);
                     SetGroupVisible(_rhymeInputGroup, _rhymeInputTransition, _rhymeInputPanelImage, true, animate);
                     SetGroupVisible(_playerVerseGroup, _playerVerseTransition, _playerVersePanelImage, false, animate);
 
-                    if (animate)
-                    {
+                    if (animate) {
                         BattlePanelShown?.Invoke(BattleUiPanelKind.OpponentVerse);
                         BattlePanelShown?.Invoke(BattleUiPanelKind.RhymeInput);
                     }
 
-                    StartInputPresentationReadyWatch();
                     break;
 
                 case BattlePhase.PlayerVerse:
-                    MarkInputPresentationNotReady();
                     SetGroupVisible(_opponentVerseGroup, _opponentVerseTransition, _opponentVersePanelImage, false, animate);
                     SetGroupVisible(_rhymeInputGroup, _rhymeInputTransition, _rhymeInputPanelImage, false, animate);
                     SetGroupVisible(_playerVerseGroup, _playerVerseTransition, _playerVersePanelImage, true, animate);
 
-                    if (animate)
-                    {
+                    if (animate) {
                         BattlePanelShown?.Invoke(BattleUiPanelKind.PlayerVerse);
                     }
 
@@ -341,7 +339,6 @@ namespace RhAImers.UI
 
                 case BattlePhase.Hidden:
                 default:
-                    MarkInputPresentationNotReady();
                     SetGroupVisible(_opponentVerseGroup, _opponentVerseTransition, _opponentVersePanelImage, false, animate);
                     SetGroupVisible(_rhymeInputGroup, _rhymeInputTransition, _rhymeInputPanelImage, false, animate);
                     SetGroupVisible(_playerVerseGroup, _playerVerseTransition, _playerVersePanelImage, false, animate);
@@ -351,130 +348,43 @@ namespace RhAImers.UI
             _currentPhase = phase;
         }
 
-        private void StartInputPresentationReadyWatch()
+        private async UniTask MoveBattleStartSignalAsync(Vector2 from, Vector2 to, float duration, bool useEaseOut, CancellationToken ct)
         {
-            if (_inputPresentationReadyCoroutine != null)
-            {
-                StopCoroutine(_inputPresentationReadyCoroutine);
+            if (_battleStartSignalRectTransform == null) {
+                return;
             }
 
-            _inputPresentationReadyCoroutine = StartCoroutine(WaitForInputPresentationReadyRoutine());
-        }
-
-        private IEnumerator WaitForInputPresentationReadyRoutine()
-        {
-            yield return null;
-
-            while (_isBattleStartSignalPlaying
-                || IsTransitionRunning(_opponentVerseTransition)
-                || IsTransitionRunning(_rhymeInputTransition)
-                || IsTransitionRunning(_playerVerseTransition))
-            {
-                yield return null;
-            }
-
-            if (_currentPhase == BattlePhase.Input && _phaseAnimationReady)
-            {
-                IsInputPresentationReady = true;
-            }
-
-            _inputPresentationReadyCoroutine = null;
-        }
-
-        private bool IsTransitionRunning(UIPanelTransition transition)
-        {
-            return transition != null && transition.IsTransitioning;
-        }
-
-        private void MarkInputPresentationNotReady()
-        {
-            IsInputPresentationReady = false;
-
-            if (_inputPresentationReadyCoroutine != null)
-            {
-                StopCoroutine(_inputPresentationReadyCoroutine);
-                _inputPresentationReadyCoroutine = null;
-            }
-        }
-
-        private IEnumerator PlayBattleStartSignalRoutine()
-        {
-            _phaseAnimationReady = false;
-            _isBattleStartSignalPlaying = true;
-            MarkInputPresentationNotReady();
-            ApplyPhaseVisibility(BattlePhase.Hidden, false);
-            SetBattleStartSignalVisible(true, 1f);
-
-            if (_battleStartSignalRectTransform != null)
-            {
-                _battleStartSignalRectTransform.anchoredPosition = GetBattleStartSignalEnterPosition();
-            }
-
-            BattleStartSignalShown?.Invoke();
-
-            yield return MoveBattleStartSignal(
-                GetBattleStartSignalEnterPosition(),
-                _battleStartSignalCenterPosition,
-                _battleStartSignalSlideInDuration,
-                useEaseOut: true
-            );
-
-            if (_battleStartSignalHoldDuration > 0f)
-            {
-                yield return new WaitForSecondsRealtime(_battleStartSignalHoldDuration);
-            }
-
-            yield return MoveBattleStartSignal(
-                _battleStartSignalCenterPosition,
-                GetBattleStartSignalExitPosition(),
-                _battleStartSignalSlideOutDuration,
-                useEaseOut: false
-            );
-
-            SetBattleStartSignalVisible(false, 0f);
-
-            if (_battleStartSignalRectTransform != null)
-            {
-                _battleStartSignalRectTransform.anchoredPosition = _battleStartSignalCenterPosition;
-            }
-
-            if (_battleStartSignalPostDelay > 0f)
-            {
-                yield return new WaitForSecondsRealtime(_battleStartSignalPostDelay);
-            }
-
-            _isBattleStartSignalPlaying = false;
-            _phaseAnimationReady = true;
-            ApplyPhaseVisibility(_pendingPhase, true);
-
-            _battleStartSignalCoroutine = null;
-        }
-
-        private IEnumerator MoveBattleStartSignal(Vector2 from, Vector2 to, float duration, bool useEaseOut)
-        {
-            if (_battleStartSignalRectTransform == null)
-            {
-                yield break;
-            }
-
-            if (duration <= 0f)
-            {
+            if (duration <= 0f) {
                 _battleStartSignalRectTransform.anchoredPosition = to;
-                yield break;
+                return;
             }
 
             float elapsed = 0f;
 
-            while (elapsed < duration)
-            {
+            while (elapsed < duration) {
+                ct.ThrowIfCancellationRequested();
+
                 elapsed += Time.unscaledDeltaTime;
                 float t = Mathf.Clamp01(elapsed / duration);
                 float eased = useEaseOut ? EaseOutCubic(t) : EaseInCubic(t);
                 _battleStartSignalRectTransform.anchoredPosition = Vector2.LerpUnclamped(from, to, eased);
-                yield return null;
+
+                await UniTask.Yield(PlayerLoopTiming.Update, ct);
             }
 
             _battleStartSignalRectTransform.anchoredPosition = to;
+        }
+
+        private void CancelBattleStartSignal()
+        {
+            if (_battleStartSignalCts == null) {
+                return;
+            }
+
+            _battleStartSignalCts.Cancel();
+            _battleStartSignalCts.Dispose();
+            _battleStartSignalCts = null;
+            _isBattleStartSignalPlaying = false;
         }
 
         private Vector2 GetBattleStartSignalEnterPosition()
@@ -491,33 +401,27 @@ namespace RhAImers.UI
         {
             GameObject signalObject = ResolveBattleStartSignalObject();
 
-            if (signalObject == null)
-            {
+            if (signalObject == null) {
                 return;
             }
 
-            if (_battleStartSignalCanvasGroup == null)
-            {
+            if (_battleStartSignalCanvasGroup == null) {
                 _battleStartSignalCanvasGroup = signalObject.GetComponent<CanvasGroup>();
             }
 
-            if (_battleStartSignalCanvasGroup == null)
-            {
+            if (_battleStartSignalCanvasGroup == null) {
                 _battleStartSignalCanvasGroup = signalObject.AddComponent<CanvasGroup>();
             }
 
-            if (_battleStartSignalImage == null)
-            {
+            if (_battleStartSignalImage == null) {
                 _battleStartSignalImage = signalObject.GetComponentInChildren<Image>(true);
             }
 
-            if (_battleStartSignalRectTransform == null)
-            {
+            if (_battleStartSignalRectTransform == null) {
                 _battleStartSignalRectTransform = signalObject.transform as RectTransform;
             }
 
-            if (_battleStartSignalRectTransform != null)
-            {
+            if (_battleStartSignalRectTransform != null) {
                 _battleStartSignalCenterPosition = _battleStartSignalRectTransform.anchoredPosition;
             }
 
@@ -526,18 +430,15 @@ namespace RhAImers.UI
 
         private GameObject ResolveBattleStartSignalObject()
         {
-            if (_battleStartSignalGroup != null)
-            {
+            if (_battleStartSignalGroup != null) {
                 return _battleStartSignalGroup;
             }
 
-            if (_battleStartSignalCanvasGroup != null)
-            {
+            if (_battleStartSignalCanvasGroup != null) {
                 return _battleStartSignalCanvasGroup.gameObject;
             }
 
-            if (_battleStartSignalImage != null)
-            {
+            if (_battleStartSignalImage != null) {
                 return _battleStartSignalImage.gameObject;
             }
 
@@ -555,13 +456,11 @@ namespace RhAImers.UI
         {
             GameObject signalObject = ResolveBattleStartSignalObject();
 
-            if (signalObject != null)
-            {
+            if (signalObject != null) {
                 signalObject.SetActive(visible);
             }
 
-            if (_battleStartSignalCanvasGroup != null)
-            {
+            if (_battleStartSignalCanvasGroup != null) {
                 _battleStartSignalCanvasGroup.alpha = alpha;
                 _battleStartSignalCanvasGroup.interactable = false;
                 _battleStartSignalCanvasGroup.blocksRaycasts = false;
@@ -575,13 +474,11 @@ namespace RhAImers.UI
 
         private void ApplyBattleBackground()
         {
-            if (_backgroundImage == null)
-            {
+            if (_backgroundImage == null) {
                 return;
             }
 
-            if (_battleBackgroundSprite != null)
-            {
+            if (_battleBackgroundSprite != null) {
                 _backgroundImage.sprite = _battleBackgroundSprite;
             }
 
@@ -618,8 +515,7 @@ namespace RhAImers.UI
                 _useSlicedRhymeInputPanel
             );
 
-            if (_inputRhymesScrollRect != null)
-            {
+            if (_inputRhymesScrollRect != null) {
                 _inputRhymesScrollRect.horizontal = false;
                 _inputRhymesScrollRect.vertical = true;
                 _inputRhymesScrollRect.movementType = ScrollRect.MovementType.Clamped;
@@ -628,13 +524,11 @@ namespace RhAImers.UI
 
         private void ApplyPanelImage(Image panelImage, Sprite panelSprite, Color panelColor, bool useSliced)
         {
-            if (panelImage == null)
-            {
+            if (panelImage == null) {
                 return;
             }
 
-            if (panelSprite != null)
-            {
+            if (panelSprite != null) {
                 panelImage.sprite = panelSprite;
             }
 
@@ -646,31 +540,26 @@ namespace RhAImers.UI
 
         private void ResolvePanelTransitions()
         {
-            if (_opponentVerseTransition == null)
-            {
+            if (_opponentVerseTransition == null) {
                 _opponentVerseTransition = ResolveTransition(_opponentVerseGroup, _opponentVersePanelImage);
             }
 
-            if (_playerVerseTransition == null)
-            {
+            if (_playerVerseTransition == null) {
                 _playerVerseTransition = ResolveTransition(_playerVerseGroup, _playerVersePanelImage);
             }
 
-            if (_rhymeInputTransition == null)
-            {
+            if (_rhymeInputTransition == null) {
                 _rhymeInputTransition = ResolveTransition(_rhymeInputGroup, _rhymeInputPanelImage);
             }
         }
 
         private UIPanelTransition ResolveTransition(GameObject group, Component fallbackComponent)
         {
-            if (group != null && group.TryGetComponent(out UIPanelTransition transition))
-            {
+            if (group != null && group.TryGetComponent(out UIPanelTransition transition)) {
                 return transition;
             }
 
-            if (fallbackComponent != null && fallbackComponent.TryGetComponent(out UIPanelTransition fallbackTransition))
-            {
+            if (fallbackComponent != null && fallbackComponent.TryGetComponent(out UIPanelTransition fallbackTransition)) {
                 return fallbackTransition;
             }
 
@@ -686,26 +575,22 @@ namespace RhAImers.UI
 
         private void PrepareRhymeTabTemplate()
         {
-            if (_inputRhymeTabTemplate != null)
-            {
+            if (_inputRhymeTabTemplate != null) {
                 _inputRhymeTabTemplate.SetActive(false);
             }
 
-            if (_inputRhymesEmptyText != null)
-            {
+            if (_inputRhymesEmptyText != null) {
                 _inputRhymesEmptyText.gameObject.SetActive(true);
             }
         }
 
         private void UpdateInputRhymesTextFallback(IReadOnlyList<string> rhymes)
         {
-            if (_inputRhymesText == null)
-            {
+            if (_inputRhymesText == null) {
                 return;
             }
 
-            if (rhymes == null || rhymes.Count == 0)
-            {
+            if (rhymes == null || rhymes.Count == 0) {
                 _inputRhymesText.text = "入力済みライム：なし";
                 return;
             }
@@ -713,8 +598,7 @@ namespace RhAImers.UI
             var builder = new StringBuilder();
             builder.AppendLine("入力済みライム：");
 
-            for (int i = 0; i < rhymes.Count; i++)
-            {
+            for (int i = 0; i < rhymes.Count; i++) {
                 builder.AppendLine($"{i + 1}. {rhymes[i]}");
             }
 
@@ -727,18 +611,15 @@ namespace RhAImers.UI
 
             bool hasRhymes = rhymes != null && rhymes.Count > 0;
 
-            if (_inputRhymesEmptyText != null)
-            {
+            if (_inputRhymesEmptyText != null) {
                 _inputRhymesEmptyText.gameObject.SetActive(!hasRhymes);
             }
 
-            if (!hasRhymes || _inputRhymeTabTemplate == null || _inputRhymesContent == null)
-            {
+            if (!hasRhymes || _inputRhymeTabTemplate == null || _inputRhymesContent == null) {
                 return;
             }
 
-            for (int i = 0; i < rhymes.Count; i++)
-            {
+            for (int i = 0; i < rhymes.Count; i++) {
                 int rhymeIndex = i;
                 string rhymeWord = rhymes[i];
 
@@ -748,15 +629,13 @@ namespace RhAImers.UI
                 tab.SetActive(true);
 
                 Text wordText = FindText(tab.transform, _rhymeTabWordTextName);
-                if (wordText != null)
-                {
+                if (wordText != null) {
                     wordText.supportRichText = true;
                     wordText.text = rhymeWord;
                 }
 
                 Button removeButton = FindButton(tab.transform, _rhymeTabRemoveButtonName);
-                if (removeButton != null)
-                {
+                if (removeButton != null) {
                     removeButton.onClick.RemoveAllListeners();
                     removeButton.onClick.AddListener(() => InputRhymeRemoveAtRequested?.Invoke(rhymeIndex));
                     removeButton.interactable = true;
@@ -767,29 +646,24 @@ namespace RhAImers.UI
 
             Canvas.ForceUpdateCanvases();
 
-            if (_inputRhymesScrollRect != null)
-            {
+            if (_inputRhymesScrollRect != null) {
                 _inputRhymesScrollRect.verticalNormalizedPosition = 1f;
             }
         }
 
         private void ClearInputRhymeTabs()
         {
-            for (int i = 0; i < _inputRhymeTabInstances.Count; i++)
-            {
+            for (int i = 0; i < _inputRhymeTabInstances.Count; i++) {
                 GameObject tab = _inputRhymeTabInstances[i];
 
-                if (tab == null)
-                {
+                if (tab == null) {
                     continue;
                 }
 
-                if (Application.isPlaying)
-                {
+                if (Application.isPlaying) {
                     Destroy(tab);
                 }
-                else
-                {
+                else {
                     DestroyImmediate(tab);
                 }
             }
@@ -800,8 +674,7 @@ namespace RhAImers.UI
         private Text FindText(Transform root, string preferredName)
         {
             Transform preferred = FindChildRecursive(root, preferredName);
-            if (preferred != null && preferred.TryGetComponent(out Text preferredText))
-            {
+            if (preferred != null && preferred.TryGetComponent(out Text preferredText)) {
                 return preferredText;
             }
 
@@ -811,8 +684,7 @@ namespace RhAImers.UI
         private Button FindButton(Transform root, string preferredName)
         {
             Transform preferred = FindChildRecursive(root, preferredName);
-            if (preferred != null && preferred.TryGetComponent(out Button preferredButton))
-            {
+            if (preferred != null && preferred.TryGetComponent(out Button preferredButton)) {
                 return preferredButton;
             }
 
@@ -821,23 +693,19 @@ namespace RhAImers.UI
 
         private Transform FindChildRecursive(Transform root, string childName)
         {
-            if (root == null || string.IsNullOrWhiteSpace(childName))
-            {
+            if (root == null || string.IsNullOrWhiteSpace(childName)) {
                 return null;
             }
 
-            for (int i = 0; i < root.childCount; i++)
-            {
+            for (int i = 0; i < root.childCount; i++) {
                 Transform child = root.GetChild(i);
 
-                if (child.name == childName)
-                {
+                if (child.name == childName) {
                     return child;
                 }
 
                 Transform nested = FindChildRecursive(child, childName);
-                if (nested != null)
-                {
+                if (nested != null) {
                     return nested;
                 }
             }
@@ -847,27 +715,20 @@ namespace RhAImers.UI
 
         private void SetGroupVisible(GameObject group, UIPanelTransition transition, Component fallbackComponent, bool visible, bool animate)
         {
-            if (transition != null)
-            {
-                if (animate)
-                {
-                    if (visible)
-                    {
+            if (transition != null) {
+                if (animate) {
+                    if (visible) {
                         transition.Show();
                     }
-                    else
-                    {
+                    else {
                         transition.Hide();
                     }
                 }
-                else
-                {
-                    if (visible)
-                    {
+                else {
+                    if (visible) {
                         transition.ShowImmediate();
                     }
-                    else
-                    {
+                    else {
                         transition.HideImmediate();
                     }
                 }
@@ -875,32 +736,27 @@ namespace RhAImers.UI
                 return;
             }
 
-            if (group != null)
-            {
+            if (group != null) {
                 group.SetActive(visible);
                 return;
             }
 
-            if (fallbackComponent != null)
-            {
+            if (fallbackComponent != null) {
                 fallbackComponent.gameObject.SetActive(visible);
             }
         }
 
         private void SetResultVisible(bool visible)
         {
-            if (_resultPanel != null)
-            {
+            if (_resultPanel != null) {
                 _resultPanel.SetActive(visible);
 
-                if (visible)
-                {
+                if (visible) {
                     _resultPanel.transform.SetAsLastSibling();
                 }
             }
 
-            if (_retryButton != null)
-            {
+            if (_retryButton != null) {
                 _retryButton.gameObject.SetActive(visible);
                 _retryButton.interactable = visible;
             }
@@ -916,8 +772,7 @@ namespace RhAImers.UI
 
             if (string.IsNullOrWhiteSpace(resultDetail)
                 || resultDetail == defaultTypeName
-                || resultDetail == defaultShortTypeName)
-            {
+                || resultDetail == defaultShortTypeName) {
                 return "全ターン終了\nバトルが終了しました";
             }
 
@@ -931,8 +786,7 @@ namespace RhAImers.UI
 
         private void SetText(Text target, string value)
         {
-            if (target == null)
-            {
+            if (target == null) {
                 return;
             }
 
@@ -949,54 +803,26 @@ namespace RhAImers.UI
             return $"{minutes:00}:{seconds:00}";
         }
 
-        /// <summary>
-        /// テキストのハイライト処理を行います．
-        /// </summary>
-        /// <remarks>
-        /// プロンプトの与え方を変更し，[[]]で囲む処理を削除したため，このメソッドは非推奨となりました．
-        /// </remarks>
-        /// <param name="rawText"></param>
-        /// <returns></returns>
-        [Obsolete]
-        private string FormatVerseText(string rawText)
-        {
-            if (string.IsNullOrEmpty(rawText))
-            {
-                return string.Empty;
-            }
-
-            string text = EscapeRichText(rawText);
-
-            text = Regex.Replace(
-                text,
-                @"\[\[(.+?)\]\]",
-                $"<b><color={HighlightColor}>$1</color></b>"
-            );
-
-            text = Regex.Replace(
-                text,
-                @"【(.+?)】",
-                $"<b><color={HighlightColor}>$1</color></b>"
-            );
-
-            return text;
-        }
-
         private string FormatVerseTextWithHighlights(string rawText, IReadOnlyList<VerseHighlight> highlights)
         {
             if (string.IsNullOrEmpty(rawText)) {
                 return string.Empty;
             }
+
             string text = EscapeRichText(rawText);
+
             if (highlights != null && highlights.Count > 0) {
                 var sb = new StringBuilder(text);
                 int offset = 0;
+
                 foreach (var highlight in highlights) {
                     int startIndex = highlight.StartIndex + offset;
                     int length = highlight.Length;
+
                     if (startIndex < 0 || startIndex >= sb.Length || length <= 0) {
                         continue;
                     }
+
                     int endIndex = Mathf.Min(startIndex + length, sb.Length);
                     string highlightedPart = sb.ToString(startIndex, endIndex - startIndex);
                     string replacement = $"<b><color={HighlightColor}>{highlightedPart}</color></b>";
@@ -1004,8 +830,10 @@ namespace RhAImers.UI
                     sb.Insert(startIndex, replacement);
                     offset += replacement.Length - (endIndex - startIndex);
                 }
+
                 text = sb.ToString();
             }
+
             return text;
         }
 
@@ -1022,7 +850,7 @@ namespace RhAImers.UI
         }
 
         private float EaseInCubic(float t)
-        { 
+        {
             return t * t * t;
         }
     }

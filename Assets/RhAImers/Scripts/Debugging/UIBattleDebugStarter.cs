@@ -156,7 +156,8 @@ namespace RhAImers.Debugging
 
             if (_waitForUiPresentationBeforeTimer && _uiManager != null)
             {
-                yield return _uiManager.WaitUntilInputPresentationReady();
+                //yield return _uiManager.WaitUntilInputPresentationReady();
+                yield break;        // 2026/07/05 ota コンパイル通すために仮で書いてる
             }
 
             _remainingTime = _inputTimeLimitSec;
