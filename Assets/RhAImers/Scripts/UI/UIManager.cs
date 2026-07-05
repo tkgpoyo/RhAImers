@@ -146,11 +146,11 @@ namespace RhAImers.UI
             _battleStartSignalCts = new CancellationTokenSource();
             var ct = _battleStartSignalCts.Token;
 
-            SetResultVisible(false);
-
             if (!HasBattleStartSignal()) {
                 return;
             }
+
+            SetResultVisible(false);
 
             try {
                 _isBattleStartSignalPlaying = true;
@@ -313,8 +313,14 @@ namespace RhAImers.UI
                 return;
             }
 
+            bool isEnteringInputPhase = phase == BattlePhase.Input && _currentPhase != BattlePhase.Input;
+
             switch (phase) {
                 case BattlePhase.Input:
+                    if (isEnteringInputPhase) {
+                        ResetInputPresentationVisuals();
+                    }
+
                     SetGroupVisible(_opponentVerseGroup, _opponentVerseTransition, _opponentVersePanelImage, true, animate);
                     SetGroupVisible(_rhymeInputGroup, _rhymeInputTransition, _rhymeInputPanelImage, true, animate);
                     SetGroupVisible(_playerVerseGroup, _playerVerseTransition, _playerVersePanelImage, false, animate);
@@ -470,6 +476,17 @@ namespace RhAImers.UI
         private void HandleRetryButtonClicked()
         {
             RetrySelected?.Invoke();
+        }
+
+        /// <summary>
+        /// 入力フェーズに新規突入した際の見た目を初期化します．
+        /// タイマーが実際に開始するまでは，残り時間・入力済みライムを表示しません．
+        /// </summary>
+        private void ResetInputPresentationVisuals()
+        {
+            SetText(_inputTimerText, string.Empty);  // "00:00"ではなく非表示相当の空文字に
+            UpdateInputRhymesTextFallback(null);
+            RebuildInputRhymeTabs(null);
         }
 
         private void ApplyBattleBackground()

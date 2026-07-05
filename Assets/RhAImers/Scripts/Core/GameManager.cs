@@ -168,6 +168,7 @@ namespace RhAImers.Core
             // バトル開始
             CurrentState = GameState.BattleStart;
             var currentSession = new BattleSession(settings.MaxTurn);                                   // バトルセッションの生成 TODO: MaxTurnを設定から取得するようにする
+
             await _uiManager.ShowBattleStartSignalAsync();                                              // バトル開始のUI表示
 
             for (int turn = 0; turn < settings.MaxTurn; turn++) {
@@ -188,8 +189,6 @@ namespace RhAImers.Core
                 cts = null;
 
                 _uiManager.ShowOpponentVerse(opponentVerse);                                            // 相手バースの表示
-                Debug.Log(opponentVerse.Text);
-
 
                 // ライム入力
                 cts = new CancellationTokenSource();
