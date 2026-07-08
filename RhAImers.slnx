@@ -1,4 +1,7 @@
 ﻿<Solution>
+  <Project Path="Unity.Postprocessing.Runtime.csproj" />
+  <Project Path="Unity.Postprocessing.Editor.csproj" />
   <Project Path="RhAImers.csproj" />
+  <Project Path="Assembly-CSharp.csproj" />
   <Project Path="EditMode.csproj" />
 </Solution>

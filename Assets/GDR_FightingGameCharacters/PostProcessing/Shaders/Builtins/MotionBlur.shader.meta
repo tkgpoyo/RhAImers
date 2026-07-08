@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 2c459b89a7c8b1a4fbefe0d81341651c
+timeCreated: 1489147878
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160649
+  packageName: Wire Frame Training Character
+  packageVersion: 1.0
+  assetPath: Assets/GDR_FightingGameCharacters/PostProcessing/Shaders/Builtins/MotionBlur.shader
+  uploadId: 346293

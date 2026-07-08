@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 6dba4103d23a7904fbc49099355aff3e
+timeCreated: 1503754250
+licenseType: Store
+ComputeShaderImporter:
+  currentAPIMask: 131076
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160649
+  packageName: Wire Frame Training Character
+  packageVersion: 1.0
+  assetPath: Assets/GDR_FightingGameCharacters/PostProcessing/Shaders/Builtins/GaussianDownsample.compute
+  uploadId: 346293

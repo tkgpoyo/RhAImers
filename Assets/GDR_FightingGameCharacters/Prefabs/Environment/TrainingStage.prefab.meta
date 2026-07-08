@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: d75e2cd78c07a73469579cee187227de
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 100100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160649
+  packageName: Wire Frame Training Character
+  packageVersion: 1.0
+  assetPath: Assets/GDR_FightingGameCharacters/Prefabs/Environment/TrainingStage.prefab
+  uploadId: 346293

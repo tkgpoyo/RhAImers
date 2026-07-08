@@ -1,0 +1,19 @@
+fileFormatVersion: 2
+guid: f48a0d4b798943a448e8d2e5d891133c
+timeCreated: 1492899655
+licenseType: Store
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160649
+  packageName: Wire Frame Training Character
+  packageVersion: 1.0
+  assetPath: Assets/GDR_FightingGameCharacters/PostProcessing/Editor/Utils/SerializedParameterOverride.cs
+  uploadId: 346293

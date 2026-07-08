@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 0d8afcb51cc9f0349a6d190da929b838
+timeCreated: 1489138738
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160649
+  packageName: Wire Frame Training Character
+  packageVersion: 1.0
+  assetPath: Assets/GDR_FightingGameCharacters/PostProcessing/Shaders/Builtins/GrainBaker.shader
+  uploadId: 346293

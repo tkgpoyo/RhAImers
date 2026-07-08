@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: fe144c7e314047f4bb779d555c5405ac
+timeCreated: 1496747212
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160649
+  packageName: Wire Frame Training Character
+  packageVersion: 1.0
+  assetPath: Assets/GDR_FightingGameCharacters/PostProcessing/Shaders/Editor/ConvertToLog.shader
+  uploadId: 346293

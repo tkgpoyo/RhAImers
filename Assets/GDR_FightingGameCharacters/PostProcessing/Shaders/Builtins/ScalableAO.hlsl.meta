@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: e4b5af8727f8b8e49aa97c2e8e5d1a3d
+timeCreated: 1498574653
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160649
+  packageName: Wire Frame Training Character
+  packageVersion: 1.0
+  assetPath: Assets/GDR_FightingGameCharacters/PostProcessing/Shaders/Builtins/ScalableAO.hlsl
+  uploadId: 346293

@@ -1,0 +1,19 @@
+fileFormatVersion: 2
+guid: 26ed99f46b86df8449003e6ec0f65144
+timeCreated: 1493900975
+licenseType: Store
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160649
+  packageName: Wire Frame Training Character
+  packageVersion: 1.0
+  assetPath: Assets/GDR_FightingGameCharacters/PostProcessing/Editor/Decorators/TrackballDecorator.cs
+  uploadId: 346293

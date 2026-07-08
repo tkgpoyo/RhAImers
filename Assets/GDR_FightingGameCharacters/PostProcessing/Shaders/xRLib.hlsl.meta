@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 981a66a12fced7a45b3c106b67167ab5
+timeCreated: 1497886257
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160649
+  packageName: Wire Frame Training Character
+  packageVersion: 1.0
+  assetPath: Assets/GDR_FightingGameCharacters/PostProcessing/Shaders/xRLib.hlsl
+  uploadId: 346293

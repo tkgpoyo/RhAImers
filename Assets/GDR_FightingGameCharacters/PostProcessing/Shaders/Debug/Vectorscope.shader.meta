@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: a71093f2a4fe26a40805c22739e10e4a
+timeCreated: 1499700462
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160649
+  packageName: Wire Frame Training Character
+  packageVersion: 1.0
+  assetPath: Assets/GDR_FightingGameCharacters/PostProcessing/Shaders/Debug/Vectorscope.shader
+  uploadId: 346293

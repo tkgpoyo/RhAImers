@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: a741cbbb27e6ad747a354440a9132a66
+timeCreated: 1489754265
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160649
+  packageName: Wire Frame Training Character
+  packageVersion: 1.0
+  assetPath: Assets/GDR_FightingGameCharacters/PostProcessing/Shaders/API/D3D9.hlsl
+  uploadId: 346293

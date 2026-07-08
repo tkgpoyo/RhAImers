@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: f75014305794b3948a3c6d5ccd550e05
+timeCreated: 1492610926
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160649
+  packageName: Wire Frame Training Character
+  packageVersion: 1.0
+  assetPath: Assets/GDR_FightingGameCharacters/PostProcessing/Shaders/Builtins/FinalPass.shader
+  uploadId: 346293
