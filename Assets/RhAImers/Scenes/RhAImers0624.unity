@@ -136,7 +136,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &53000782
 RectTransform:
   m_ObjectHideFlags: 0
@@ -317,6 +317,11 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 65190082}
   m_CullTransparentMesh: 1
+--- !u!95 &73781025 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: 803213e889f022d4f8e0f83643bc498e, type: 3}
+  m_PrefabInstance: {fileID: 1369003714}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &241680027
 GameObject:
   m_ObjectHideFlags: 0
@@ -497,6 +502,10 @@ MonoBehaviour:
   _rhymeInputController: {fileID: 261815016}
   _uiManager: {fileID: 261815018}
   _defaultInputTimeLimitSec: 30
+  _rapperAnimator: {fileID: 73781025}
+  _combatStateName: Combat
+  _rapStateName: rap
+  _transitionDuration: 0.25
 --- !u!114 &261815018
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -535,12 +544,12 @@ MonoBehaviour:
   _opponentVersePanelColor: {r: 1, g: 1, b: 1, a: 1}
   _playerVersePanelColor: {r: 1, g: 1, b: 1, a: 1}
   _useSlicedVersePanels: 1
-  _rhymeInputPanelImage: {fileID: 1952534517}
+  _rhymeInputPanelImage: {fileID: 1313470332}
   _rhymeInputPanelSprite: {fileID: 2674505045085050951, guid: c8b6bcc222b86c3499736c52927d477b, type: 3}
   _rhymeInputPanelColor: {r: 1, g: 1, b: 1, a: 1}
   _useSlicedRhymeInputPanel: 1
   _inputRhymesScrollRect: {fileID: 1710011508}
-  _inputRhymesContent: {fileID: 1710011507}
+  _inputRhymesContent: {fileID: 295545655}
   _inputRhymeTabTemplate: {fileID: 551594204}
   _inputRhymesEmptyText: {fileID: 0}
   _rhymeTabWordTextName: WordText
@@ -573,9 +582,9 @@ MonoBehaviour:
   _verseLineStartAlpha: 0
   _verseLineStartScale: 1.2
   _pauseGameTimeDuringVerseLinePresentation: 1
-  _opponentVerseLinesRoot: {fileID: 813020013}
+  _opponentVerseLinesRoot: {fileID: 0}
   _opponentVerseLineTemplate: {fileID: 1318415253}
-  _playerVerseLinesRoot: {fileID: 880571359}
+  _playerVerseLinesRoot: {fileID: 0}
   _playerVerseLineTemplate: {fileID: 890220594}
   _autoBuildVerseLineObjects: 1
   _hideFallbackVerseTextWhenUsingLineObjects: 1
@@ -2874,7 +2883,7 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: ece2b6713c2871143a569151e6ea8635, type: 2}
     - target: {fileID: 919132149155446097, guid: 803213e889f022d4f8e0f83643bc498e, type: 3}
       propertyPath: m_Name
-      value: neon+wireframe+figure+3d+model@Rapping
+      value: rap
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 803213e889f022d4f8e0f83643bc498e, type: 3}
       propertyPath: m_IsActive
@@ -2884,6 +2893,10 @@ PrefabInstance:
       propertyPath: m_Controller
       value: 
       objectReference: {fileID: 9100000, guid: d8ceea3e1cc39ad4d88bc91e84c90365, type: 2}
+    - target: {fileID: 5866666021909216657, guid: 803213e889f022d4f8e0f83643bc498e, type: 3}
+      propertyPath: m_UpdateMode
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 5866666021909216657, guid: 803213e889f022d4f8e0f83643bc498e, type: 3}
       propertyPath: m_ApplyRootMotion
       value: 0
@@ -3860,99 +3873,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1974600112}
   m_CullTransparentMesh: 1
---- !u!1001 &2058696793
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: -8679921383154817045, guid: 14cc7bea969713b448218fd2a8c3224f, type: 3}
-      propertyPath: m_LocalScale.x
-      value: 20
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 14cc7bea969713b448218fd2a8c3224f, type: 3}
-      propertyPath: m_LocalScale.y
-      value: 20
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 14cc7bea969713b448218fd2a8c3224f, type: 3}
-      propertyPath: m_LocalScale.z
-      value: 20
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 14cc7bea969713b448218fd2a8c3224f, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0.04278922
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 14cc7bea969713b448218fd2a8c3224f, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: -14
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 14cc7bea969713b448218fd2a8c3224f, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 124.888885
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 14cc7bea969713b448218fd2a8c3224f, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: -0.38268325
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 14cc7bea969713b448218fd2a8c3224f, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 14cc7bea969713b448218fd2a8c3224f, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0.9238796
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 14cc7bea969713b448218fd2a8c3224f, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 14cc7bea969713b448218fd2a8c3224f, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 14cc7bea969713b448218fd2a8c3224f, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 225
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 14cc7bea969713b448218fd2a8c3224f, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -6481561668456262875, guid: 14cc7bea969713b448218fd2a8c3224f, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: ece2b6713c2871143a569151e6ea8635, type: 2}
-    - target: {fileID: 919132149155446097, guid: 14cc7bea969713b448218fd2a8c3224f, type: 3}
-      propertyPath: m_Name
-      value: Standing React Large From Front (1)
-      objectReference: {fileID: 0}
-    - target: {fileID: 919132149155446097, guid: 14cc7bea969713b448218fd2a8c3224f, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5866666021909216657, guid: 14cc7bea969713b448218fd2a8c3224f, type: 3}
-      propertyPath: m_Controller
-      value: 
-      objectReference: {fileID: 9100000, guid: 202a12fa531e0914bb4196dceb6a7917, type: 2}
-    - target: {fileID: 5866666021909216657, guid: 14cc7bea969713b448218fd2a8c3224f, type: 3}
-      propertyPath: m_CullingMode
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5866666021909216657, guid: 14cc7bea969713b448218fd2a8c3224f, type: 3}
-      propertyPath: m_AnimatePhysics
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5866666021909216657, guid: 14cc7bea969713b448218fd2a8c3224f, type: 3}
-      propertyPath: m_ApplyRootMotion
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 14cc7bea969713b448218fd2a8c3224f, type: 3}
 --- !u!1 &2145621778
 GameObject:
   m_ObjectHideFlags: 0
@@ -4062,7 +3982,6 @@ SceneRoots:
   m_Roots:
   - {fileID: 538468732}
   - {fileID: 1369003714}
-  - {fileID: 2058696793}
   - {fileID: 2145621779}
   - {fileID: 557870924}
   - {fileID: 1376338476}
