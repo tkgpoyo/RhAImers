@@ -27,6 +27,7 @@ namespace RhAImers.UI
         private enum BattlePhase
         {
             Hidden,
+            OpponentVerse,
             Input,
             PlayerVerse
         }
@@ -309,13 +310,13 @@ namespace RhAImers.UI
             SetResultVisible(false);
         }
 
-        public void ShowOpponentVerse(Verse verse)
+        public UniTask ShowOpponentVerseAsync(Verse verse)
         {
-            ShowInputPhase();
+            ShowOpponentVersePhase();
             SetStatus("Opponent Verse");
             SetResultVisible(false);
 
-            StartVerseLinePresentation(_opponentVerseText, verse, BattleUiPanelKind.OpponentVerse);
+            return StartVerseLinePresentationAsync(_opponentVerseText, verse, BattleUiPanelKind.OpponentVerse);
         }
 
         public void ShowInputTimer(int sec)
@@ -336,13 +337,13 @@ namespace RhAImers.UI
             RebuildInputRhymeTabs(rhymes);
         }
 
-        public void ShowGeneratedVerse(Verse verse)
+        public UniTask ShowGeneratedVerseAsync(Verse verse)
         {
             ShowPlayerVersePhase();
             SetStatus("Generated Verse");
             SetResultVisible(false);
 
-            StartVerseLinePresentation(_generatedVerseText, verse, BattleUiPanelKind.PlayerVerse);
+            return StartVerseLinePresentationAsync(_generatedVerseText, verse, BattleUiPanelKind.PlayerVerse);
         }
 
         public void ShowResult(BattleResult result)
@@ -363,7 +364,7 @@ namespace RhAImers.UI
             CancelVerseLinePresentation();
             SetVerseLineObjectPresentationVisible(BattleUiPanelKind.OpponentVerse, false);
             SetVerseFallbackTextVisible(_opponentVerseText, true);
-            ShowInputPhase();
+            ShowOpponentVersePhase();
             SetStatus("Opponent Verse Loading");
             SetResultVisible(false);
             SetText(_opponentVerseText, "相手のバース生成中...");
@@ -388,6 +389,11 @@ namespace RhAImers.UI
             SetStatus("Scoring Loading");
             SetResultVisible(false);
             SetText(_resultText, "採点中...");
+        }
+
+        public void ShowOpponentVersePhase()
+        {
+            ApplyPhaseVisibility(BattlePhase.OpponentVerse, animate: true);
         }
 
         public void ShowInputPhase()
@@ -425,6 +431,17 @@ namespace RhAImers.UI
 
             switch (phase)
             {
+                case BattlePhase.OpponentVerse:
+                    SetGroupVisible(_opponentVerseGroup, _opponentVerseTransition, _opponentVersePanelImage, true, animate);
+                    SetGroupVisible(_rhymeInputGroup, _rhymeInputTransition, _rhymeInputPanelImage, false, animate);
+                    SetGroupVisible(_playerVerseGroup, _playerVerseTransition, _playerVersePanelImage, false, animate);
+
+                    if (animate)
+                    {
+                        BattlePanelShown?.Invoke(BattleUiPanelKind.OpponentVerse);
+                    }
+                    break;
+
                 case BattlePhase.Input:
                     if (isEnteringInputPhase)
                     {
@@ -437,7 +454,10 @@ namespace RhAImers.UI
 
                     if (animate)
                     {
-                        BattlePanelShown?.Invoke(BattleUiPanelKind.OpponentVerse);
+                        if (_currentPhase != BattlePhase.OpponentVerse)
+                        {
+                            BattlePanelShown?.Invoke(BattleUiPanelKind.OpponentVerse);
+                        }
                         BattlePanelShown?.Invoke(BattleUiPanelKind.RhymeInput);
                     }
 
@@ -466,7 +486,7 @@ namespace RhAImers.UI
             _currentPhase = phase;
         }
 
-        private void StartVerseLinePresentation(Text target, Verse verse, BattleUiPanelKind panelKind)
+        private async UniTask StartVerseLinePresentationAsync(Text target, Verse verse, BattleUiPanelKind panelKind)
         {
             CancelVerseLinePresentation();
 
@@ -492,23 +512,26 @@ namespace RhAImers.UI
                 _verseLinePresentationCts = new CancellationTokenSource();
                 var lineObjectCt = _verseLinePresentationCts.Token;
 
-                PresentVerseLineObjectsAsync(
-                    lineRoot,
-                    lineTemplate,
-                    lineInstances,
-                    rawText,
-                    highlights,
-                    panelKind,
-                    lineObjectCt
-                ).Forget(ex =>
+                try
                 {
-                    if (ex is OperationCanceledException)
-                    {
-                        return;
-                    }
-
+                    await PresentVerseLineObjectsAsync(
+                        lineRoot,
+                        lineTemplate,
+                        lineInstances,
+                        rawText,
+                        highlights,
+                        panelKind,
+                        lineObjectCt
+                    );
+                }
+                catch (OperationCanceledException)
+                {
+                    // canceled
+                }
+                catch (Exception ex)
+                {
                     Debug.LogException(ex);
-                });
+                }
 
                 return;
             }
@@ -534,15 +557,18 @@ namespace RhAImers.UI
             _verseLinePresentationCts = new CancellationTokenSource();
             var ct = _verseLinePresentationCts.Token;
 
-            PresentVerseLineByLineAsync(target, rawText, highlights, panelKind, ct).Forget(ex =>
+            try
             {
-                if (ex is OperationCanceledException)
-                {
-                    return;
-                }
-
+                await PresentVerseLineByLineAsync(target, rawText, highlights, panelKind, ct);
+            }
+            catch (OperationCanceledException)
+            {
+                // canceled
+            }
+            catch (Exception ex)
+            {
                 Debug.LogException(ex);
-            });
+            }
         }
 
         private async UniTask PresentVerseLineObjectsAsync(

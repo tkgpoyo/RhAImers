@@ -4,6 +4,7 @@ using RhAImers.Battle;
 using RhAImers.Input;
 using RhAImers.UI;
 using UnityEngine;
+using Cysharp.Threading.Tasks;
 
 namespace RhAImers.Debugging
 {
@@ -193,7 +194,7 @@ namespace RhAImers.Debugging
                 new List<VerseHighlight>()
             );
 
-            _uiManager?.ShowGeneratedVerse(generatedVerse);
+            _uiManager?.ShowGeneratedVerseAsync(generatedVerse).Forget();
 
             if (_currentTurnIndex + 1 >= _maxTurn)
             {

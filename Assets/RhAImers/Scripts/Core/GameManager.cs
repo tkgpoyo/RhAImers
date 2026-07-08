@@ -34,6 +34,12 @@ namespace RhAImers.Core
         [SerializeField] private UIManager _uiManager;
         [SerializeField] private int _defaultInputTimeLimitSec = 30;
 
+        [Header("Animation Settings")]
+        [SerializeField] private Animator _rapperAnimator;
+        [SerializeField] private string _combatStateName = "Combat";
+        [SerializeField] private string _rapStateName = "rap";
+        [SerializeField] private float _transitionDuration = 0.25f;
+
         public GameState CurrentState { get; private set; }
         public BattleSettings CurrentSettings { get; private set; }
 
@@ -188,7 +194,7 @@ namespace RhAImers.Core
                 cts.Dispose();
                 cts = null;
 
-                _uiManager.ShowOpponentVerse(opponentVerse);                                            // 相手バースの表示
+                await _uiManager.ShowOpponentVerseAsync(opponentVerse);                                            // 相手バースの表示
 
                 // ライム入力
                 cts = new CancellationTokenSource();
@@ -222,9 +228,26 @@ namespace RhAImers.Core
                 cts.Dispose();
                 cts = null;
 
-                _uiManager.ShowGeneratedVerse(playerVerse);                                             // プレイヤーバースの表示
+                await _uiManager.ShowGeneratedVerseAsync(playerVerse);                                             // プレイヤーバースの表示
 
-                await UniTask.Delay(3000); // TODO: プレイヤーバース表示時間の調整(UIManagerのほうがいいかも？)
+                // Combatモーションへ移行
+                if (_rapperAnimator != null) {
+                    _rapperAnimator.CrossFadeInFixedTime(_combatStateName, _transitionDuration);
+                }
+
+                // Combatモーションが再生し終わるくらいまで待機（例: 1.5秒）
+                await UniTask.Delay(1500); 
+
+                // rapモーションに戻る
+                if (_rapperAnimator != null) {
+                    _rapperAnimator.CrossFadeInFixedTime(_rapStateName, _transitionDuration);
+                }
+
+                // バースを読むための余韻として追加で待機（例: 1.5秒）
+                await UniTask.Delay(1500);
+
+                // 次のターン（相手のバース）に向けて少し待機
+                await UniTask.Delay(500);
 
                 // ターンデータの追加
                 CurrentState = GameState.TurnEnd;
