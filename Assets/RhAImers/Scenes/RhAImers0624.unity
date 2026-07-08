@@ -380,7 +380,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &173597636
 RectTransform:
   m_ObjectHideFlags: 0
@@ -477,8 +477,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 100, y: 100}
-  m_SizeDelta: {x: 600, y: 750}
+  m_AnchoredPosition: {x: 75, y: 50}
+  m_SizeDelta: {x: 700, y: 850}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &211634284
 MonoBehaviour:
@@ -500,8 +500,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
-  m_Type: 1
+  m_Sprite: {fileID: 2674505045085050951, guid: c8b6bcc222b86c3499736c52927d477b, type: 3}
+  m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -656,6 +656,18 @@ MonoBehaviour:
   _inputRhymesEmptyText: {fileID: 0}
   _rhymeTabWordTextName: WordText
   _rhymeTabRemoveButtonName: RemoveButton
+  _wrapRhymeTabsIntoRows: 1
+  _rhymeTabsPerRow: 2
+  _rhymeTabHorizontalSpacing: 8
+  _centerRhymeTabWordText: 1
+  _inputRhymesScrollSensitivity: 10
+  _useDynamicRhymeTabWidth: 1
+  _rhymeTabMinWidth: 300
+  _rhymeTabMaxWidth: 600
+  _rhymeTabTextHorizontalPadding: 44
+  _rhymeTabFallbackRowWidth: 600
+  _shrinkRhymeTextWhenOverflow: 1
+  _rhymeTabMinFontSize: 30
   _opponentVerseText: {fileID: 802037084}
   _inputTimerText: {fileID: 729858382}
   _inputRhymesText: {fileID: 1888405714}
@@ -664,6 +676,23 @@ MonoBehaviour:
   _statusText: {fileID: 483979703}
   _resultPanel: {fileID: 173597635}
   _retryButton: {fileID: 934387827}
+  _showVerseLineByLine: 1
+  _verseLineIntervalSec: 1
+  _clearVerseBeforeLinePresentation: 1
+  _animateVerseLineAppearance: 1
+  _verseLineFadeInDurationSec: 0.5
+  _verseLineStartAlpha: 0
+  _verseLineStartScale: 1.2
+  _pauseGameTimeDuringVerseLinePresentation: 1
+  _opponentVerseLinesRoot: {fileID: 0}
+  _opponentVerseLineTemplate: {fileID: 802037084}
+  _playerVerseLinesRoot: {fileID: 0}
+  _playerVerseLineTemplate: {fileID: 1762939171}
+  _autoBuildVerseLineObjects: 1
+  _hideFallbackVerseTextWhenUsingLineObjects: 1
+  _applyVerseLineRootLayout: 1
+  _verseLineRootSpacing: 4
+  _verseLineRootChildAlignment: 1
 --- !u!4 &261815019
 Transform:
   m_ObjectHideFlags: 0
@@ -1543,11 +1572,11 @@ RectTransform:
   - {fileID: 1332833806}
   m_Father: {fileID: 1678828095}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 75}
+  m_AnchorMin: {x: 0.5, y: 1}
+  m_AnchorMax: {x: 0.5, y: 1}
+  m_AnchoredPosition: {x: 0, y: -150}
   m_SizeDelta: {x: 600, y: 80}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &687900900
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1768,7 +1797,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: -100, y: -100}
+  m_SizeDelta: {x: -100, y: -400}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &802037084
 MonoBehaviour:
@@ -1792,7 +1821,7 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 45
+    m_FontSize: 60
     m_FontStyle: 0
     m_BestFit: 0
     m_MinSize: 0
@@ -1964,8 +1993,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -100}
-  m_SizeDelta: {x: -100, y: -300}
+  m_AnchoredPosition: {x: 0, y: -87.5}
+  m_SizeDelta: {x: -150, y: -325}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &921874180
 MonoBehaviour:
@@ -2190,8 +2219,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 40, y: 0}
-  m_SizeDelta: {x: -80, y: 0}
+  m_AnchoredPosition: {x: 35, y: 0}
+  m_SizeDelta: {x: -90, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1005681005
 MonoBehaviour:
@@ -2215,7 +2244,7 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 30
+    m_FontSize: 20
     m_FontStyle: 0
     m_BestFit: 1
     m_MinSize: 0
@@ -2445,15 +2474,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0.392}
+  m_Color: {r: 1, g: 1, b: 1, a: 0.78431374}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
-  m_Type: 1
+  m_Sprite: {fileID: 2674505045085050951, guid: c8b6bcc222b86c3499736c52927d477b, type: 3}
+  m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -2921,11 +2950,11 @@ RectTransform:
   - {fileID: 1231063368}
   m_Father: {fileID: 116958360}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
-  m_Pivot: {x: 0, y: 1}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1424948501
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3024,11 +3053,13 @@ MonoBehaviour:
   _rhymeInputPanelShowClip: {fileID: 8300000, guid: a76ef22b727a7f043a5ed9f21a2909c8, type: 3}
   _rhymeAddedClip: {fileID: 8300000, guid: 387a74aca2203f746b0bd9dfc2f63d83, type: 3}
   _rhymeRemovedClip: {fileID: 8300000, guid: 20214926fd41a3246b0803a44b131704, type: 3}
+  _verseLineShownClip: {fileID: 8300000, guid: 225f16cf6ef27e34b92f7c41fb0d2c2c, type: 3}
   _allTurnsFinishedClip: {fileID: 8300000, guid: bd25d4157d294ce4a95b9a5989d7b62f, type: 3}
   _masterVolume: 1
   _startSignalVolume: 1
   _panelShowVolume: 1
   _rhymeVolume: 1
+  _verseLineVolume: 1
   _resultVolume: 1
 --- !u!82 &1629441358
 AudioSource:
@@ -3166,8 +3197,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 300, y: -250}
-  m_SizeDelta: {x: 750, y: 500}
+  m_AnchoredPosition: {x: 400, y: -180}
+  m_SizeDelta: {x: 900, y: 600}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1678828096
 MonoBehaviour:
@@ -3302,11 +3333,11 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 45
+    m_FontSize: 60
     m_FontStyle: 0
     m_BestFit: 0
-    m_MinSize: 4
-    m_MaxSize: 45
+    m_MinSize: 0
+    m_MaxSize: 60
     m_Alignment: 4
     m_AlignByGeometry: 0
     m_RichText: 1
@@ -3519,10 +3550,10 @@ RectTransform:
   - {fileID: 294288280}
   - {fileID: 1888405713}
   - {fileID: 483979702}
-  - {fileID: 173597636}
   - {fileID: 471496422}
   - {fileID: 1629441356}
   - {fileID: 1090193102}
+  - {fileID: 173597636}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
