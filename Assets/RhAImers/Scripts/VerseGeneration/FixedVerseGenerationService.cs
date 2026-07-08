@@ -35,30 +35,7 @@ namespace RhAImers.VerseGeneration
 
             var text = $"{rhymeList}で答える これが俺の返し\nお前のバースを超えていく 終わりなき挑戦を見せろ";
 
-            return UniTask.FromResult(new Verse(text, FindRhymeHighlights(text, rhymes)));
-        }
-
-        private static IReadOnlyList<VerseHighlight> FindRhymeHighlights(
-            string text, IReadOnlyList<string> rhymes)
-        {
-            var highlights = new List<VerseHighlight>();
-            if (string.IsNullOrEmpty(text) || rhymes == null) return highlights;
-
-            foreach (var rhyme in rhymes)
-            {
-                if (string.IsNullOrEmpty(rhyme)) continue;
-
-                var searchFrom = 0;
-                while (searchFrom < text.Length)
-                {
-                    var idx = text.IndexOf(rhyme, searchFrom, StringComparison.Ordinal);
-                    if (idx < 0) break;
-                    highlights.Add(new VerseHighlight(idx, rhyme.Length));
-                    searchFrom = idx + rhyme.Length;
-                }
-            }
-
-            return highlights;
+            return UniTask.FromResult(new Verse(text, VerseHighlightFinder.Find(text, rhymes)));
         }
     }
 }
