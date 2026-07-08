@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: b34a29e523cb9d545881e193a079f2df
+timeCreated: 1496329341
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160649
+  packageName: Wire Frame Training Character
+  packageVersion: 1.0
+  assetPath: Assets/GDR_FightingGameCharacters/PostProcessing/Shaders/Debug/LightMeter.shader
+  uploadId: 346293

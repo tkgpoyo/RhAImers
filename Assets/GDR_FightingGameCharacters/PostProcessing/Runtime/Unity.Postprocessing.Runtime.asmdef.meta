@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: d60799ab2a985554ea1a39cd38695018
+AssemblyDefinitionImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160649
+  packageName: Wire Frame Training Character
+  packageVersion: 1.0
+  assetPath: Assets/GDR_FightingGameCharacters/PostProcessing/Runtime/Unity.Postprocessing.Runtime.asmdef
+  uploadId: 346293

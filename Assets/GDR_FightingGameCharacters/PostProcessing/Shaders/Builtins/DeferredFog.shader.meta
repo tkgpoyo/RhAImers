@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 4117fce9491711c4094d33a048e36e73
+timeCreated: 1498468345
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160649
+  packageName: Wire Frame Training Character
+  packageVersion: 1.0
+  assetPath: Assets/GDR_FightingGameCharacters/PostProcessing/Shaders/Builtins/DeferredFog.shader
+  uploadId: 346293

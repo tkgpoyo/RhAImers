@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: b1592a3a0adfa6b48bd887bcc759fab3
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160649
+  packageName: Wire Frame Training Character
+  packageVersion: 1.0
+  assetPath: Assets/GDR_FightingGameCharacters/Materials/Environments/TrainingStage/TrainSta_GridGlow_MAT.mat
+  uploadId: 346293

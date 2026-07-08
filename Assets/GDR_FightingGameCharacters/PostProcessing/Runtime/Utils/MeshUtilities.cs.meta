@@ -1,0 +1,19 @@
+fileFormatVersion: 2
+guid: 4b42fa3a7c4baed49bb4f6a56dadc03f
+timeCreated: 1488548727
+licenseType: Store
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160649
+  packageName: Wire Frame Training Character
+  packageVersion: 1.0
+  assetPath: Assets/GDR_FightingGameCharacters/PostProcessing/Runtime/Utils/MeshUtilities.cs
+  uploadId: 346293

@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 38502e5cb7782364ba3db59850a9a8ad
+timeCreated: 1489753963
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160649
+  packageName: Wire Frame Training Character
+  packageVersion: 1.0
+  assetPath: Assets/GDR_FightingGameCharacters/PostProcessing/Shaders/API/Metal.hlsl
+  uploadId: 346293

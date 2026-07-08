@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 02d2da9bc88d25c4d878c1ed4e0b3854
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures: []
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160649
+  packageName: Wire Frame Training Character
+  packageVersion: 1.0
+  assetPath: Assets/GDR_FightingGameCharacters/PostProcessing/Shaders/Builtins/CopyStdFromTexArray.shader
+  uploadId: 346293

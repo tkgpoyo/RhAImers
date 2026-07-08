@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 81af42a93ade3dd46a9b583d4eec76d6
+timeCreated: 1497734907
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160649
+  packageName: Wire Frame Training Character
+  packageVersion: 1.0
+  assetPath: Assets/GDR_FightingGameCharacters/PostProcessing/Shaders/Builtins/SubpixelMorphologicalAntialiasing.shader
+  uploadId: 346293

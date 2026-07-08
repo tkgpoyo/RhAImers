@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 5ab0816423f0dfe45841cab3b05ec9ef
+timeCreated: 1496835037
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160649
+  packageName: Wire Frame Training Character
+  packageVersion: 1.0
+  assetPath: Assets/GDR_FightingGameCharacters/PostProcessing/Shaders/Builtins/DiscardAlpha.shader
+  uploadId: 346293

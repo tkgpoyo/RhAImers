@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 31e9175024adfd44aba2530ff9b77494
+timeCreated: 1496933873
+licenseType: Store
+ComputeShaderImporter:
+  currentAPIMask: 4
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160649
+  packageName: Wire Frame Training Character
+  packageVersion: 1.0
+  assetPath: Assets/GDR_FightingGameCharacters/PostProcessing/Shaders/Builtins/Texture3DLerp.compute
+  uploadId: 346293

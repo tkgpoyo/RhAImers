@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: e4d3e4779e48a374f91d48d4c0aedb7b
+timeCreated: 1503305163
+licenseType: Store
+ComputeShaderImporter:
+  currentAPIMask: 131076
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160649
+  packageName: Wire Frame Training Character
+  packageVersion: 1.0
+  assetPath: Assets/GDR_FightingGameCharacters/PostProcessing/Shaders/Builtins/MultiScaleVODownsample2.compute
+  uploadId: 346293

@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 92c63830cd50c0b4fbb8233613839958
+timeCreated: 1499691152
+licenseType: Store
+ComputeShaderImporter:
+  currentAPIMask: 8196
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160649
+  packageName: Wire Frame Training Character
+  packageVersion: 1.0
+  assetPath: Assets/GDR_FightingGameCharacters/PostProcessing/Shaders/Debug/Waveform.compute
+  uploadId: 346293

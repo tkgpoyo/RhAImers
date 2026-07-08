@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 8c2fcbdf9bc58664f89917f7b9d79501
+timeCreated: 1488985723
+licenseType: Store
+ComputeShaderImporter:
+  currentAPIMask: 4
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160649
+  packageName: Wire Frame Training Character
+  packageVersion: 1.0
+  assetPath: Assets/GDR_FightingGameCharacters/PostProcessing/Shaders/Builtins/ExposureHistogram.compute
+  uploadId: 346293

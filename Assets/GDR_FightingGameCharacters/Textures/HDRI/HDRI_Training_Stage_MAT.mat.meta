@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: b4f3f8fcfbc6a5f41928381ec4c0479d
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160649
+  packageName: Wire Frame Training Character
+  packageVersion: 1.0
+  assetPath: Assets/GDR_FightingGameCharacters/Textures/HDRI/HDRI_Training_Stage_MAT.mat
+  uploadId: 346293

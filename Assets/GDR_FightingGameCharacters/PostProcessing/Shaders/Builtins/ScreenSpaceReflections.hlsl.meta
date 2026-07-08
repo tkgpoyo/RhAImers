@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: ad99a5d3138ea7e47a3b2a3051034642
+timeCreated: 1503577882
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160649
+  packageName: Wire Frame Training Character
+  packageVersion: 1.0
+  assetPath: Assets/GDR_FightingGameCharacters/PostProcessing/Shaders/Builtins/ScreenSpaceReflections.hlsl
+  uploadId: 346293
