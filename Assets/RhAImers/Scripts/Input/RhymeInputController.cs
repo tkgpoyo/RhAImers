@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Text;
 using RhAImers.UI;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -274,6 +276,13 @@ namespace RhAImers.Input
                 return;
             }
 
+            // 2026/07/11 ADD アルファベットが含まれる場合は除去
+            if (!IsNonAlphabeticLettersOnly(trimmedWord))
+            {
+                RequestFocusInputFieldNextFrame();
+                return;
+            }
+
             _lastAddedFrame = Time.frameCount;
             _lastAddedWord = trimmedWord;
 
@@ -364,6 +373,81 @@ namespace RhAImers.Input
 
             StopCoroutine(_refocusCoroutine);
             _refocusCoroutine = null;
+        }
+
+        /// <summary>
+        /// 入力文字列が，ASCII英字を除くUnicode上の文字のみで構成されているかを返します．
+        /// </summary>
+        /// <param name="word">判定する文字列</param>
+        /// <returns>
+        /// ひらがな，カタカナ，漢字などの文字だけならtrue，
+        /// 英字，数字，記号，空白，絵文字などを含む場合はfalse
+        /// </returns>
+        private static bool IsNonAlphabeticLettersOnly(string word)
+        {
+            /* MEMO 
+                C#では string を char[] で扱えるが， 文字コードを UTF-16 で扱うらしい （出典： https://learn.microsoft.com/en-us/dotnet/standard/base-types/character-encoding-introduction ） 
+                UTF-16 は 2byte または 4byte の可変長文字コードであり， 4byte の場合は2つ連続した char として扱う 
+                ここで， 4byte のとき surrogate pairs によって文字を表現し， high surrogate と low surrogate に分けられる
+            */
+            if (string.IsNullOrEmpty(word))
+            {
+                return false;
+            }
+
+            // 「が」と「か + 結合濁点」などの表現を可能な限り統一する
+            word = word.Normalize(NormalizationForm.FormC);
+
+            for (int i = 0; i < word.Length;)
+            {
+                int codePoint;
+
+                if (char.IsHighSurrogate(word[i]))
+                {
+                    if (i + 1 >= word.Length || !char.IsLowSurrogate(word[i + 1]))
+                    {
+                        return false;
+                    }
+
+                    codePoint = char.ConvertToUtf32(word[i], word[i + 1]);
+                }
+                else if (char.IsLowSurrogate(word[i]))
+                {
+                    return false;
+                }
+                else
+                {
+                    codePoint = word[i];
+                }
+
+                // ASCII英字を除外する
+                if (codePoint is >= 'A' and <= 'Z' or >= 'a' and <= 'z')
+                {
+                    return false;
+                }
+
+                UnicodeCategory category =
+                    CharUnicodeInfo.GetUnicodeCategory(word, i);
+
+                if (!IsLetterCategory(category))
+                {
+                    return false;
+                }
+
+                i += codePoint > 0xFFFF ? 2 : 1;
+            }
+
+            return true;
+
+            bool IsLetterCategory(UnicodeCategory category)
+            {
+                return category is
+                    //UnicodeCategory.UppercaseLetter or
+                    //UnicodeCategory.LowercaseLetter or
+                    //UnicodeCategory.TitlecaseLetter or
+                    //UnicodeCategory.ModifierLetter or
+                    UnicodeCategory.OtherLetter;
+            }
         }
     }
 }
