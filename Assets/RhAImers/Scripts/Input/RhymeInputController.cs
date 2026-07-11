@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using Cysharp.Threading.Tasks;
 using RhAImers.UI;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -61,7 +62,6 @@ namespace RhAImers.Input
         {
             if (_rhymeInputField != null)
             {
-                _rhymeInputField.onSubmit.AddListener(HandleInputSubmitted);
                 _rhymeInputField.onEndEdit.AddListener(HandleInputEnded);
             }
 
@@ -80,7 +80,6 @@ namespace RhAImers.Input
         {
             if (_rhymeInputField != null)
             {
-                _rhymeInputField.onSubmit.RemoveListener(HandleInputSubmitted);
                 _rhymeInputField.onEndEdit.RemoveListener(HandleInputEnded);
             }
 
@@ -264,6 +263,7 @@ namespace RhAImers.Input
         {
             if (!_allowInput || string.IsNullOrWhiteSpace(word))
             {
+                _uiManager.ShowRhymeInvalidInputVibration().Forget();   // TODO: キャンセル処理諸々ちゃんと考える
                 RequestFocusInputFieldNextFrame();
                 return;
             }
@@ -272,6 +272,7 @@ namespace RhAImers.Input
 
             if (_lastAddedFrame == Time.frameCount && _lastAddedWord == trimmedWord)
             {
+                _uiManager.ShowRhymeInvalidInputVibration().Forget();   // TODO: キャンセル処理諸々ちゃんと考える
                 RequestFocusInputFieldNextFrame();
                 return;
             }
@@ -279,6 +280,7 @@ namespace RhAImers.Input
             // 2026/07/11 ADD アルファベットが含まれる場合は除去
             if (!IsNonAlphabeticLettersOnly(trimmedWord))
             {
+                _uiManager.ShowRhymeInvalidInputVibration().Forget();   // TODO: キャンセル処理諸々ちゃんと考える
                 RequestFocusInputFieldNextFrame();
                 return;
             }

@@ -104,6 +104,14 @@ namespace RhAImers.UI
         [SerializeField] private Color _rhymeInputPanelColor = Color.white;
         [SerializeField] private bool _useSlicedRhymeInputPanel = true;
 
+        [Header("不正入力時の振動")]
+        /// <summary>振動時間</summary>
+        [SerializeField, Min(0f)] private float _invalidInputVibrationDuration = 0.3f;
+        /// <summary>左右への最大移動量</summary>
+        [SerializeField, Min(0f)] private float _invalidInputVibrationAmplitude = 12f;
+        /// <summary>振動回数</summary>
+        [SerializeField, Min(1)] private int _invalidInputVibrationCount = 4;
+
         [Header("Rhyme Tab UI")]
         [SerializeField] private ScrollRect _inputRhymesScrollRect;
         [SerializeField] private RectTransform _inputRhymesContent;
@@ -182,6 +190,13 @@ namespace RhAImers.UI
         private float _activeVerseLineOriginalCanvasGroupAlpha;
         private bool _isVersePresentationGameTimePaused;
         private float _versePresentationPreviousTimeScale = 1f;
+
+        #region vibration関連
+        private CancellationTokenSource _invalidInputVibrationCancellationTokenSource;
+        private Vector2 _invalidInputVibrationOrigin;
+        private bool _isInvalidInputVibrating;
+        private int _invalidInputVibrationId;
+        #endregion (vibration関連)
 
         public event Action RetrySelected;
         public event Action<int> InputRhymeRemoveAtRequested;
@@ -418,6 +433,114 @@ namespace RhAImers.UI
             CancelVerseLinePresentation();
             HideAllVerseLineObjectPresentations();
             ApplyPhaseVisibility(BattlePhase.Hidden, animate: false);
+        }
+
+        /// <summary>
+        /// 不正な入力を示すため，入力欄を左右に振動させます．
+        /// </summary>
+        public async UniTask ShowRhymeInvalidInputVibration()
+        {
+            if (_rhymeInputPanelImage == null ||
+                !_rhymeInputPanelImage.isActiveAndEnabled)
+            {
+                return;
+            }
+
+            RectTransform rectTransform =
+                _rhymeInputPanelImage.rectTransform;
+
+            if (_invalidInputVibrationDuration <= 0f ||
+                _invalidInputVibrationAmplitude <= 0f)
+            {
+                return;
+            }
+
+            // すでに振動中なら，前回の振動を中断する
+            _invalidInputVibrationCancellationTokenSource?.Cancel();
+
+            // 前回の振動途中の位置を基準位置にしないよう，先に元へ戻す
+            if (_isInvalidInputVibrating)
+            {
+                rectTransform.anchoredPosition =
+                    _invalidInputVibrationOrigin;
+            }
+
+            _invalidInputVibrationOrigin =
+                rectTransform.anchoredPosition;
+
+            _isInvalidInputVibrating = true;
+
+            int vibrationId = ++_invalidInputVibrationId;
+
+            var cancellationTokenSource =
+                CancellationTokenSource.CreateLinkedTokenSource(
+                    destroyCancellationToken
+                );
+
+            _invalidInputVibrationCancellationTokenSource =
+                cancellationTokenSource;
+
+            try
+            {
+                float elapsed = 0f;
+
+                while (elapsed < _invalidInputVibrationDuration)
+                {
+                    cancellationTokenSource.Token
+                        .ThrowIfCancellationRequested();
+
+                    elapsed += Time.unscaledDeltaTime;
+
+                    float progress = Mathf.Clamp01(
+                        elapsed / _invalidInputVibrationDuration
+                    );
+
+                    // 時間経過とともに振幅を小さくする
+                    float damping = 1f - progress;
+
+                    float phase =
+                        progress *
+                        _invalidInputVibrationCount *
+                        Mathf.PI *
+                        2f;
+
+                    float offsetX =
+                        Mathf.Sin(phase) *
+                        _invalidInputVibrationAmplitude *
+                        damping;
+
+                    rectTransform.anchoredPosition =
+                        _invalidInputVibrationOrigin +
+                        Vector2.right * offsetX;
+
+                    await UniTask.Yield(
+                        PlayerLoopTiming.Update,
+                        cancellationTokenSource.Token
+                    );
+                }
+            }
+            catch (OperationCanceledException)
+                when (cancellationTokenSource.IsCancellationRequested)
+            {
+                // 再度呼び出された場合やオブジェクト破棄時の中断は正常終了とする
+            }
+            finally
+            {
+                // 古い振動処理が，新しく開始した振動を邪魔しないようにする
+                if (vibrationId == _invalidInputVibrationId)
+                {
+                    if (rectTransform != null)
+                    {
+                        rectTransform.anchoredPosition =
+                            _invalidInputVibrationOrigin;
+                    }
+
+                    _isInvalidInputVibrating = false;
+                    _invalidInputVibrationCancellationTokenSource = null;
+                }
+
+                cancellationTokenSource.Dispose();
+            }
         }
 
         private void ApplyPhaseVisibility(BattlePhase phase, bool animate)
