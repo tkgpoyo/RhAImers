@@ -25,6 +25,9 @@ namespace RhAImers.UI
         [Header("Verse Line")]
         [SerializeField] private AudioClip _verseLineShownClip;
 
+        [Header("Player Verse Impact")]
+        [SerializeField] private AudioClip _playerVerseImpactClip;
+
         [Header("Result")]
         [SerializeField] private AudioClip _allTurnsFinishedClip;
 
@@ -34,6 +37,7 @@ namespace RhAImers.UI
         [SerializeField, Range(0f, 1f)] private float _panelShowVolume = 1f;
         [SerializeField, Range(0f, 1f)] private float _rhymeVolume = 1f;
         [SerializeField, Range(0f, 1f)] private float _verseLineVolume = 1f;
+        [SerializeField, Range(0f, 1f)] private float _playerVerseImpactVolume = 1f;
         [SerializeField, Range(0f, 1f)] private float _resultVolume = 1f;
 
         private void Awake()
@@ -58,6 +62,7 @@ namespace RhAImers.UI
                 _uiManager.BattleStartSignalShown += HandleBattleStartSignalShown;
                 _uiManager.BattlePanelShown += HandleBattlePanelShown;
                 _uiManager.BattleVerseLineShown += HandleBattleVerseLineShown;
+                _uiManager.PlayerVerseImpactOccurred += HandlePlayerVerseImpactOccurred;
                 _uiManager.BattleResultShown += HandleBattleResultShown;
             }
 
@@ -75,6 +80,7 @@ namespace RhAImers.UI
                 _uiManager.BattleStartSignalShown -= HandleBattleStartSignalShown;
                 _uiManager.BattlePanelShown -= HandleBattlePanelShown;
                 _uiManager.BattleVerseLineShown -= HandleBattleVerseLineShown;
+                _uiManager.PlayerVerseImpactOccurred -= HandlePlayerVerseImpactOccurred;
                 _uiManager.BattleResultShown -= HandleBattleResultShown;
             }
 
@@ -111,6 +117,11 @@ namespace RhAImers.UI
         private void HandleBattleVerseLineShown(BattleUiPanelKind panelKind)
         {
             PlayOneShot(_verseLineShownClip, _verseLineVolume);
+        }
+
+        private void HandlePlayerVerseImpactOccurred()
+        {
+            PlayOneShot(_playerVerseImpactClip, _playerVerseImpactVolume);
         }
 
         private void HandleRhymeAdded(string rhyme)
