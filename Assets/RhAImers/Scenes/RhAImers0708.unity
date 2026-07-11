@@ -214,7 +214,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &65190083
 RectTransform:
   m_ObjectHideFlags: 0
@@ -548,6 +548,9 @@ MonoBehaviour:
   _rhymeInputPanelSprite: {fileID: 2674505045085050951, guid: c8b6bcc222b86c3499736c52927d477b, type: 3}
   _rhymeInputPanelColor: {r: 1, g: 1, b: 1, a: 1}
   _useSlicedRhymeInputPanel: 1
+  _invalidInputVibrationDuration: 0.3
+  _invalidInputVibrationAmplitude: 12
+  _invalidInputVibrationCount: 4
   _inputRhymesScrollRect: {fileID: 1710011508}
   _inputRhymesContent: {fileID: 295545655}
   _inputRhymeTabTemplate: {fileID: 551594204}
@@ -582,6 +585,7 @@ MonoBehaviour:
   _verseLineStartAlpha: 0
   _verseLineStartScale: 1.2
   _pauseGameTimeDuringVerseLinePresentation: 1
+  _playerVerseImpactPresenter: {fileID: 0}
   _opponentVerseLinesRoot: {fileID: 0}
   _opponentVerseLineTemplate: {fileID: 1318415253}
   _playerVerseLinesRoot: {fileID: 0}
@@ -2253,12 +2257,14 @@ MonoBehaviour:
   _rhymeAddedClip: {fileID: 8300000, guid: 387a74aca2203f746b0bd9dfc2f63d83, type: 3}
   _rhymeRemovedClip: {fileID: 8300000, guid: 20214926fd41a3246b0803a44b131704, type: 3}
   _verseLineShownClip: {fileID: 8300000, guid: 225f16cf6ef27e34b92f7c41fb0d2c2c, type: 3}
+  _playerVerseImpactClip: {fileID: 0}
   _allTurnsFinishedClip: {fileID: 8300000, guid: bd25d4157d294ce4a95b9a5989d7b62f, type: 3}
   _masterVolume: 1
   _startSignalVolume: 1
   _panelShowVolume: 1
   _rhymeVolume: 1
   _verseLineVolume: 1
+  _playerVerseImpactVolume: 1
   _resultVolume: 1
 --- !u!82 &1059174872
 AudioSource:

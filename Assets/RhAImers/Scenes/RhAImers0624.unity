@@ -136,7 +136,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &53000782
 RectTransform:
   m_ObjectHideFlags: 0
@@ -292,7 +292,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 0}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -588,7 +588,7 @@ MonoBehaviour:
   _playerVerseImpactPresenter: {fileID: 880571364}
   _opponentVerseLinesRoot: {fileID: 0}
   _opponentVerseLineTemplate: {fileID: 1318415253}
-  _playerVerseLinesRoot: {fileID: 0}
+  _playerVerseLinesRoot: {fileID: 880571359}
   _playerVerseLineTemplate: {fileID: 890220594}
   _autoBuildVerseLineObjects: 1
   _hideFallbackVerseTextWhenUsingLineObjects: 1
@@ -1809,7 +1809,7 @@ MonoBehaviour:
   _glitchInterval: 0.035
   _flickerStrength: 0
   _useFlash: 1
-  _flashColor: {r: 0.2, g: 1, b: 1, a: 1}
+  _flashColor: {r: 1, g: 1, b: 1, a: 1}
   _flashStrength: 1
   _hideObjectAfterHide: 1
 --- !u!225 &813020015
@@ -1882,7 +1882,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &880571359
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1924,7 +1924,7 @@ MonoBehaviour:
   _glitchInterval: 0.035
   _flickerStrength: 0
   _useFlash: 1
-  _flashColor: {r: 0.2, g: 1, b: 1, a: 1}
+  _flashColor: {r: 1, g: 1, b: 1, a: 1}
   _flashStrength: 0.45
   _hideObjectAfterHide: 1
 --- !u!225 &880571361
@@ -2932,7 +2932,7 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 12800000, guid: 8bb27d14c4b962a479db20f06abe2111, type: 3}
-    m_FontSize: 60
+    m_FontSize: 45
     m_FontStyle: 1
     m_BestFit: 0
     m_MinSize: 0
