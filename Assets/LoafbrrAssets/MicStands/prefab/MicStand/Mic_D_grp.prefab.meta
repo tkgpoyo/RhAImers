@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 809bd334625661b4197d783830adc17d
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 341256
+  packageName: Microphone Stands
+  packageVersion: 1.0
+  assetPath: Assets/LoafbrrAssets/MicStands/prefab/MicStand/Mic_D_grp.prefab
+  uploadId: 809278
