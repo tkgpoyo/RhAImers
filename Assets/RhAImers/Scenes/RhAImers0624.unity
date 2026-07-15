@@ -458,9 +458,9 @@ GameObject:
   m_Component:
   - component: {fileID: 261815019}
   - component: {fileID: 261815018}
-  - component: {fileID: 261815017}
   - component: {fileID: 261815016}
   - component: {fileID: 261815020}
+  - component: {fileID: 261815021}
   m_Layer: 0
   m_Name: Managers
   m_TagString: Untagged
@@ -487,25 +487,6 @@ MonoBehaviour:
   _refocusInputAfterAdd: 0
   _keepInputFieldFocused: 1
   _logRhymeInputDebug: 0
---- !u!114 &261815017
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 261815015}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 32f8c7cc806c84032a1cd1b3e99ba629, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: RhAImers::RhAImers.Core.GameManager
-  _rhymeInputController: {fileID: 261815016}
-  _uiManager: {fileID: 261815018}
-  _defaultInputTimeLimitSec: 30
-  _rapperAnimator: {fileID: 73781025}
-  _combatStateName: Combat
-  _rapStateName: rap
-  _transitionDuration: 0.25
 --- !u!114 &261815018
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -630,6 +611,22 @@ MonoBehaviour:
   _resultDelaySec: 2.5
   _suppressGameManagerSubmitRequested: 1
   _waitForUiPresentationBeforeTimer: 1
+--- !u!114 &261815021
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 261815015}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 508504013d9e645e3be6d1123c270ddf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: RhAImers::RhAImers.AvatorMotion.RapperMotionController
+  _rapperAnimator: {fileID: 73781025}
+  _combatStateName: Combat
+  _rapStateName: rap
+  _transitionDuration: 0.25
 --- !u!1 &295545654
 GameObject:
   m_ObjectHideFlags: 0

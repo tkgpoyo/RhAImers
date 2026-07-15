@@ -10,6 +10,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Cysharp.Threading.Tasks;
 using System.Threading;
+using RhAImers.AvatorMotion;
 
 namespace RhAImers.Core
 {
@@ -44,18 +45,13 @@ namespace RhAImers.Core
         private UIManager _uiManager;
         private StartSceneManager _startSceneManager;
         private ModeSelectionManager _modeSelectionManager;
+        private RapperMotionController _rapperMotionController;
         private ResultSceneManager _resultSceneManager;
 
         [SerializeField] private int _defaultInputTimeLimitSec = 30;
 
         /// <summary>モード選択画面で選択された難易度</summary>
         private Difficulty _selectedDifficulty = Difficulty.Normal;
-
-        [Header("Animation Settings")]
-        [SerializeField] private Animator _rapperAnimator;
-        [SerializeField] private string _combatStateName = "Combat";
-        [SerializeField] private string _rapStateName = "rap";
-        [SerializeField] private float _transitionDuration = 0.25f;
 
         public GameState CurrentState { get; private set; }
         public BattleSettings CurrentSettings { get; private set; }
@@ -77,11 +73,6 @@ namespace RhAImers.Core
             var rhymeDictionary = RhymeDictionaryLoader.LoadFromResources();                                            // ライム辞書
             _verseGenerationService = new LlmVerseGenerationService(_llmClient, new(rhymeDictionary));                  // バース生成サービス
             _scoreCalculator = new ScoreCalculator(new(new()), new(_llmClient, new(rhymeDictionary)));                  // 得点計算クラス
-        }
-
-        private void Start()
-        {
-            HandleSceneLoaded(gameObject.scene, LoadSceneMode.Single);
         }
 
         private void OnEnable()
@@ -143,6 +134,7 @@ namespace RhAImers.Core
                 case BattleSceneName:
                     _rhymeInputController = FindFirstObjectByType<RhymeInputController>();
                     _uiManager = FindFirstObjectByType<UIManager>();
+                    _rapperMotionController = FindFirstObjectByType<RapperMotionController>();
 
                     if (_rhymeInputController != null)
                     {
@@ -153,6 +145,7 @@ namespace RhAImers.Core
                     {
                         _uiManager.RetrySelected += HandleRetrySelected;
                     }
+
 
                     StartGame();
                     break;
@@ -203,6 +196,8 @@ namespace RhAImers.Core
                 _uiManager.RetrySelected -= HandleRetrySelected;
                 _uiManager = null;
             }
+
+            _rapperMotionController = null;
         }
 
         private void UnsubscribeResultScene()
@@ -414,24 +409,10 @@ namespace RhAImers.Core
 
                 await _uiManager.ShowGeneratedVerseAsync(playerVerse);                                             // プレイヤーバースの表示
 
-                // Combatモーションへ移行
-                if (_rapperAnimator != null) {
-                    _rapperAnimator.CrossFadeInFixedTime(_combatStateName, _transitionDuration);
-                }
-
-                // Combatモーションが再生し終わるくらいまで待機（例: 1.5秒）
-                await UniTask.Delay(1500); 
-
-                // rapモーションに戻る
-                if (_rapperAnimator != null) {
-                    _rapperAnimator.CrossFadeInFixedTime(_rapStateName, _transitionDuration);
-                }
-
-                // バースを読むための余韻として追加で待機（例: 1.5秒）
-                await UniTask.Delay(1500);
-
-                // 次のターン（相手のバース）に向けて少し待機
-                await UniTask.Delay(500);
+                // やられモーション
+                await _rapperMotionController.CombatMotionAsync();
+                // 元のラップモーションに戻す
+                _rapperMotionController.StartRapMotion();
 
                 // ターンデータの追加
                 CurrentState = GameState.TurnEnd;
@@ -449,10 +430,12 @@ namespace RhAImers.Core
             _uiManager.ShowScoringLoading();                                                            // 得点計算中のUI表示
             var scores = await _scoreCalculator.CalculateAsync(currentSession.Turns);                   // 得点を取得
 
-            // 結果の表示
-            CurrentState = GameState.Result;
-            var result = new BattleResult(currentSession.Turns, scores);                                // 結果データの生成
-            _uiManager.ShowResult(result);                                                              // 結果の表示
+            //// 結果の表示
+            //CurrentState = GameState.Result;
+            //var result = new BattleResult(currentSession.Turns, scores);                                // 結果データの生成
+            //_uiManager.ShowResult(result);                                                              // 結果の表示
+
+            SceneManager.LoadScene(ResultSceneName);
         }
 
         /// <summary>
