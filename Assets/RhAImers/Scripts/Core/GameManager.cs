@@ -7,19 +7,29 @@ using RhAImers.Scoring;
 using RhAImers.UI;
 using RhAImers.VerseGeneration;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Cysharp.Threading.Tasks;
 using System.Threading;
 
 namespace RhAImers.Core
 {
     /// <summary>
-    /// ゲーム全体を管理するクラス
+    /// ゲーム全体を管理するクラス．
+    /// シーンをまたいで永続化し，各シーンのUIマネージャーが発行するボタンイベントを購読して，
+    /// シーン遷移を含むゲーム進行を一元的に管理します．
     /// </summary>
     public class GameManager : MonoBehaviour
     {
+        private const string TitleSceneName = "TitleScene";
+        private const string ModeSelectionSceneName = "ModeSelectionScene";
+        private const string BattleSceneName = "RhAImers0624";
+        private const string ResultSceneName = "ResultScene";
+
         /// <summary>最大ターン数</summary>
         /// <remarks>TODO: 将来的に削除する</remarks>
         private const int MAX_TURN = 3;
+
+        private static GameManager _instance;
 
         /// <summary>バース生成を行うサービス</summary>
         private IVerseGenerationService _verseGenerationService;
@@ -30,9 +40,16 @@ namespace RhAImers.Core
         /// <summary>LLMクライアント</summary>
         private LlmClient _llmClient;
 
-        [SerializeField] private RhymeInputController _rhymeInputController;
-        [SerializeField] private UIManager _uiManager;
+        private RhymeInputController _rhymeInputController;
+        private UIManager _uiManager;
+        private StartSceneManager _startSceneManager;
+        private ModeSelectionManager _modeSelectionManager;
+        private ResultSceneManager _resultSceneManager;
+
         [SerializeField] private int _defaultInputTimeLimitSec = 30;
+
+        /// <summary>モード選択画面で選択された難易度</summary>
+        private Difficulty _selectedDifficulty = Difficulty.Normal;
 
         [Header("Animation Settings")]
         [SerializeField] private Animator _rapperAnimator;
@@ -45,6 +62,15 @@ namespace RhAImers.Core
 
         private void Awake()
         {
+            if (_instance != null && _instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            _instance = this;
+            DontDestroyOnLoad(gameObject);
+
             _llmClient = LlmClient.CreateFromEnvironment();
             //_verseGenerationService = new LlmVerseGenerationService(_llmClient, new(new RhymeDictionary(new())));       // TODO: 仮実装のためちゃんと実装
             //_scoreCalculator = new ScoreCalculator(new(new()), new(_llmClient, new(new RhymeDictionary(new()))));       // TODO: 仮実装のためちゃんと実装
@@ -55,19 +81,177 @@ namespace RhAImers.Core
 
         private void Start()
         {
-            StartGame();
+            HandleSceneLoaded(gameObject.scene, LoadSceneMode.Single);
         }
 
         private void OnEnable()
         {
-            _rhymeInputController.SubmitRequested += HandleSubmitRequested;
-            _uiManager.RetrySelected += HandleRetrySelected;
+            SceneManager.sceneLoaded += HandleSceneLoaded;
         }
 
         private void OnDisable()
         {
-            _rhymeInputController.SubmitRequested -= HandleSubmitRequested;
-            _uiManager.RetrySelected -= HandleRetrySelected;
+            SceneManager.sceneLoaded -= HandleSceneLoaded;
+            UnsubscribeStartScene();
+            UnsubscribeModeSelection();
+            UnsubscribeBattle();
+            UnsubscribeResultScene();
+        }
+
+        /// <summary>
+        /// シーンがロードされた際に，そのシーンに対応するUIマネージャーを解決し，
+        /// ボタンイベントの購読を張り替えます．
+        /// </summary>
+        private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            if (_instance != this)
+            {
+                return;
+            }
+
+            UnsubscribeStartScene();
+            UnsubscribeModeSelection();
+            UnsubscribeBattle();
+            UnsubscribeResultScene();
+
+            switch (scene.name)
+            {
+                case TitleSceneName:
+                    CurrentState = GameState.Title;
+                    _startSceneManager = FindFirstObjectByType<StartSceneManager>();
+
+                    if (_startSceneManager != null)
+                    {
+                        _startSceneManager.StartSelected += HandleStartSceneStartSelected;
+                    }
+
+                    break;
+
+                case ModeSelectionSceneName:
+                    CurrentState = GameState.ModeSelect;
+                    _modeSelectionManager = FindFirstObjectByType<ModeSelectionManager>();
+
+                    if (_modeSelectionManager != null)
+                    {
+                        _modeSelectionManager.StartSelected += HandleModeSelectionStartSelected;
+                        _modeSelectionManager.BackSelected += HandleModeSelectionBackSelected;
+                        _modeSelectionManager.DifficultySelected += HandleModeSelectionDifficultySelected;
+                    }
+
+                    break;
+
+                case BattleSceneName:
+                    _rhymeInputController = FindFirstObjectByType<RhymeInputController>();
+                    _uiManager = FindFirstObjectByType<UIManager>();
+
+                    if (_rhymeInputController != null)
+                    {
+                        _rhymeInputController.SubmitRequested += HandleSubmitRequested;
+                    }
+
+                    if (_uiManager != null)
+                    {
+                        _uiManager.RetrySelected += HandleRetrySelected;
+                    }
+
+                    StartGame();
+                    break;
+
+                case ResultSceneName:
+                    CurrentState = GameState.Result;
+                    _resultSceneManager = FindFirstObjectByType<ResultSceneManager>();
+
+                    if (_resultSceneManager != null)
+                    {
+                        _resultSceneManager.ModeSelectionSelected += HandleResultSceneModeSelectionSelected;
+                    }
+
+                    break;
+            }
+        }
+
+        private void UnsubscribeStartScene()
+        {
+            if (_startSceneManager != null)
+            {
+                _startSceneManager.StartSelected -= HandleStartSceneStartSelected;
+                _startSceneManager = null;
+            }
+        }
+
+        private void UnsubscribeModeSelection()
+        {
+            if (_modeSelectionManager != null)
+            {
+                _modeSelectionManager.StartSelected -= HandleModeSelectionStartSelected;
+                _modeSelectionManager.BackSelected -= HandleModeSelectionBackSelected;
+                _modeSelectionManager.DifficultySelected -= HandleModeSelectionDifficultySelected;
+                _modeSelectionManager = null;
+            }
+        }
+
+        private void UnsubscribeBattle()
+        {
+            if (_rhymeInputController != null)
+            {
+                _rhymeInputController.SubmitRequested -= HandleSubmitRequested;
+                _rhymeInputController = null;
+            }
+
+            if (_uiManager != null)
+            {
+                _uiManager.RetrySelected -= HandleRetrySelected;
+                _uiManager = null;
+            }
+        }
+
+        private void UnsubscribeResultScene()
+        {
+            if (_resultSceneManager != null)
+            {
+                _resultSceneManager.ModeSelectionSelected -= HandleResultSceneModeSelectionSelected;
+                _resultSceneManager = null;
+            }
+        }
+
+        /// <summary>
+        /// <see cref="StartSceneManager.StartSelected"/>イベントのイベントハンドラ
+        /// </summary>
+        private void HandleStartSceneStartSelected()
+        {
+            SceneManager.LoadScene(ModeSelectionSceneName);
+        }
+
+        /// <summary>
+        /// <see cref="ModeSelectionManager.StartSelected"/>イベントのイベントハンドラ
+        /// </summary>
+        private void HandleModeSelectionStartSelected()
+        {
+            SceneManager.LoadScene(BattleSceneName);
+        }
+
+        /// <summary>
+        /// <see cref="ModeSelectionManager.BackSelected"/>イベントのイベントハンドラ
+        /// </summary>
+        private void HandleModeSelectionBackSelected()
+        {
+            SceneManager.LoadScene(TitleSceneName);
+        }
+
+        /// <summary>
+        /// <see cref="ModeSelectionManager.DifficultySelected"/>イベントのイベントハンドラ
+        /// </summary>
+        private void HandleModeSelectionDifficultySelected(Difficulty difficulty)
+        {
+            _selectedDifficulty = difficulty;
+        }
+
+        /// <summary>
+        /// <see cref="ResultSceneManager.ModeSelectionSelected"/>イベントのイベントハンドラ
+        /// </summary>
+        private void HandleResultSceneModeSelectionSelected()
+        {
+            SceneManager.LoadScene(ModeSelectionSceneName);
         }
 
         private void Update()
@@ -161,7 +345,7 @@ namespace RhAImers.Core
         private void StartGame()
         {
             // TODO: 仮実装から本実装にする必要がある
-            CurrentSettings = new BattleSettings(MAX_TURN, _defaultInputTimeLimitSec, Difficulty.Normal);
+            CurrentSettings = new BattleSettings(MAX_TURN, _defaultInputTimeLimitSec, _selectedDifficulty);
             RunBattleAsync(CurrentSettings).Forget(ex => Debug.LogException(ex));
         }
 
