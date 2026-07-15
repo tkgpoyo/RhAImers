@@ -446,8 +446,8 @@ namespace RhAImers.Input
                 return category is
                     //UnicodeCategory.UppercaseLetter or
                     //UnicodeCategory.LowercaseLetter or
-                    //UnicodeCategory.TitlecaseLetter or
-                    //UnicodeCategory.ModifierLetter or
+                    UnicodeCategory.TitlecaseLetter or
+                    UnicodeCategory.ModifierLetter or
                     UnicodeCategory.OtherLetter;
             }
         }

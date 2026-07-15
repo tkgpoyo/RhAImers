@@ -162,6 +162,9 @@ namespace RhAImers.UI
         [Header("Verse Presentation Timing")]
         [SerializeField] private bool _pauseGameTimeDuringVerseLinePresentation = true;
 
+        [Header("Player Verse Impact")]
+        [SerializeField] private PlayerVerseImpactPresenter _playerVerseImpactPresenter;
+
         [Header("Verse Line Objects")]
         [SerializeField] private RectTransform _opponentVerseLinesRoot;
         [SerializeField] private Text _opponentVerseLineTemplate;
@@ -203,6 +206,7 @@ namespace RhAImers.UI
         public event Action BattleStartSignalShown;
         public event Action<BattleUiPanelKind> BattlePanelShown;
         public event Action<BattleUiPanelKind> BattleVerseLineShown;
+        public event Action PlayerVerseImpactOccurred;
         public event Action BattleResultShown;
 
         private void Awake()
@@ -213,6 +217,7 @@ namespace RhAImers.UI
             PrepareBattleStartSignal();
             PrepareRhymeTabTemplate();
             PrepareVerseLineObjectTemplates();
+            ResolvePlayerVerseImpactPresenter();
             ResolvePanelTransitions();
             CapturePanelTransitionVisualStates();
 
@@ -352,13 +357,38 @@ namespace RhAImers.UI
             RebuildInputRhymeTabs(rhymes);
         }
 
-        public UniTask ShowGeneratedVerseAsync(Verse verse)
+        public async UniTask ShowGeneratedVerseAsync(Verse verse)
         {
+            if (_playerVerseImpactPresenter != null)
+            {
+                _playerVerseImpactPresenter.PrepareForShow();
+            }
+
             ShowPlayerVersePhase();
             SetStatus("Generated Verse");
             SetResultVisible(false);
 
-            return StartVerseLinePresentationAsync(_generatedVerseText, verse, BattleUiPanelKind.PlayerVerse);
+            await StartVerseLinePresentationAsync(
+                _generatedVerseText,
+                verse,
+                BattleUiPanelKind.PlayerVerse
+            );
+
+            if (_playerVerseImpactPresenter != null)
+            {
+                await _playerVerseImpactPresenter.PlayAsync(
+                    () => PlayerVerseImpactOccurred?.Invoke(),
+                    destroyCancellationToken
+                );
+
+                SetGroupVisible(
+                    _playerVerseGroup,
+                    _playerVerseTransition,
+                    _playerVersePanelImage,
+                    false,
+                    animate: false
+                );
+            }
         }
 
         public void ShowResult(BattleResult result)
@@ -1664,6 +1694,32 @@ namespace RhAImers.UI
             panelImage.raycastTarget = false;
             panelImage.type = useSliced ? Image.Type.Sliced : Image.Type.Simple;
             panelImage.fillCenter = true;
+        }
+
+        private void ResolvePlayerVerseImpactPresenter()
+        {
+            if (_playerVerseImpactPresenter != null)
+            {
+                return;
+            }
+
+            if (_playerVerseGroup != null)
+            {
+                _playerVerseImpactPresenter =
+                    _playerVerseGroup.GetComponent<PlayerVerseImpactPresenter>();
+
+                if (_playerVerseImpactPresenter == null)
+                {
+                    _playerVerseImpactPresenter =
+                        _playerVerseGroup.GetComponentInChildren<PlayerVerseImpactPresenter>(true);
+                }
+            }
+
+            if (_playerVerseImpactPresenter == null)
+            {
+                _playerVerseImpactPresenter =
+                    GetComponentInChildren<PlayerVerseImpactPresenter>(true);
+            }
         }
 
         private void ResolvePanelTransitions()

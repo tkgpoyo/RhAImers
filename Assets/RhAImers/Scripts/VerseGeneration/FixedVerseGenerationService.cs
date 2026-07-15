@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using RhAImers.Battle;
+using UnityEditor;
 
 namespace RhAImers.VerseGeneration
 {
@@ -14,17 +15,25 @@ namespace RhAImers.VerseGeneration
     {
         private static readonly string[] PresetOpponentVerses =
         {
-            "俺のリズムは止まらない 熱い血が沸き立つ\nマイクを握る手に力 世界が変わる瞬間",
-            "言葉の刃で斬り裂く 暗闇を照らす光\nビートに乗せた魂 誰も止められない炎",
-            "街の角で磨いた技 今こそ見せる時が来た\nリズムと韻が織りなす 俺だけの物語を聞け",
-            "挑むなら覚悟しろ ここは俺の舞台だ\n一歩も引かぬ意地 勝利を掴みに行く",
-            "言葉は弾丸よりも鋭い 心を貫く詩の力\nお前には見えているか この先に続く道が",
+            "今日勝つために立ち上がる\n今日勝つために神がかる\n最後の最後は愛が勝つ\n覚えとけこれがライマーズ\n",
+            "ここじゃとうに死んだ太陽\n今は当たったスポットライト\n一度戦ったなら最後\nケリをつけて決めるぞ最強\n",
+            "全力で来るのは好都合\n尽きるまで突っ切る勝負論\nゴールに向かいロックオン\n駆け抜けるぜトップロード\n",
+            "お待たせラップAIの出番だ\nお前はなれて客寄せパンダ\nしっかり返すぜ今アンサー\n喉で弾くロケットランチャー\n",
+            "マイク持って見せる行動力\n奏でる即興の協奏曲\n湧かせてやる五臓六腑\n音を乗りこなす暴走族\n",
+        };
+
+        private static readonly IReadOnlyList<string>[] PresetRhymeWords = {
+             new List<string>() { "立ち上がる", "神がかる", "愛が勝つ", "ライマーズ" },
+             new List<string>() { "太陽", "ライト", "最後", "最強" },
+             new List<string>() { "好都合", "勝負論", "ロックオン", "トップロード" },
+             new List<string>() { "出番だ", "パンダ", "アンサー", "ランチャー" },
+             new List<string>() { "行動力", "協奏曲", "五臓六腑", "暴走族" },
         };
 
         public UniTask<Verse> GenerateOpponentVerseAsync(BattleContext context, CancellationToken token = default)
         {
             var index = context.TurnIndex % PresetOpponentVerses.Length;
-            return UniTask.FromResult(new Verse(PresetOpponentVerses[index], Array.Empty<VerseHighlight>()));
+            return UniTask.FromResult(new Verse(PresetOpponentVerses[index], VerseHighlightFinder.Find(PresetOpponentVerses[index], PresetRhymeWords[index])));
         }
 
         public UniTask<Verse> GeneratePlayerVerseAsync(IReadOnlyList<string> rhymes, string opponentVerseText, CancellationToken token = default)

@@ -136,7 +136,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &53000782
 RectTransform:
   m_ObjectHideFlags: 0
@@ -292,7 +292,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 0}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -404,7 +404,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1398262718}
   m_HandleRect: {fileID: 1398262717}
   m_Direction: 2
-  m_Value: 1
+  m_Value: 0
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -548,6 +548,9 @@ MonoBehaviour:
   _rhymeInputPanelSprite: {fileID: 2674505045085050951, guid: c8b6bcc222b86c3499736c52927d477b, type: 3}
   _rhymeInputPanelColor: {r: 1, g: 1, b: 1, a: 1}
   _useSlicedRhymeInputPanel: 1
+  _invalidInputVibrationDuration: 0.3
+  _invalidInputVibrationAmplitude: 12
+  _invalidInputVibrationCount: 4
   _inputRhymesScrollRect: {fileID: 1710011508}
   _inputRhymesContent: {fileID: 295545655}
   _inputRhymeTabTemplate: {fileID: 551594204}
@@ -582,9 +585,10 @@ MonoBehaviour:
   _verseLineStartAlpha: 0
   _verseLineStartScale: 1.2
   _pauseGameTimeDuringVerseLinePresentation: 1
+  _playerVerseImpactPresenter: {fileID: 880571364}
   _opponentVerseLinesRoot: {fileID: 0}
   _opponentVerseLineTemplate: {fileID: 1318415253}
-  _playerVerseLinesRoot: {fileID: 0}
+  _playerVerseLinesRoot: {fileID: 880571359}
   _playerVerseLineTemplate: {fileID: 890220594}
   _autoBuildVerseLineObjects: 1
   _hideFallbackVerseTextWhenUsingLineObjects: 1
@@ -762,10 +766,10 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
+    m_Font: {fileID: 12800000, guid: 8bb27d14c4b962a479db20f06abe2111, type: 3}
     m_FontSize: 20
-    m_FontStyle: 0
-    m_BestFit: 1
+    m_FontStyle: 1
+    m_BestFit: 0
     m_MinSize: 0
     m_MaxSize: 45
     m_Alignment: 3
@@ -1466,6 +1470,7 @@ GameObject:
   - component: {fileID: 597103211}
   - component: {fileID: 597103213}
   - component: {fileID: 597103212}
+  - component: {fileID: 597103214}
   m_Layer: 5
   m_Name: BattleBgmPresenter
   m_TagString: Untagged
@@ -1612,6 +1617,62 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &597103214
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 597103210}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a205df05c748a5549a7c088741674557, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: RhAImers::RhAImers.UI.BattleImpactFeedbackPresenter
+  _uiManager: {fileID: 261815018}
+  _battleCanvas: {fileID: 557870923}
+  _flashImage: {fileID: 0}
+  _flashCanvasGroup: {fileID: 0}
+  _autoCreateFlashOverlay: 1
+  _flashColor: {r: 1, g: 1, b: 1, a: 1}
+  _flashCount: 3
+  _flashInDurationSec: 0.025
+  _flashOutDurationSec: 0.055
+  _flashIntervalSec: 0.025
+  _flashPeakAlpha: 0.82
+  _cameraShakeTarget: {fileID: 538468732}
+  _autoUseMainCamera: 1
+  _shakeCamera: 1
+  _cameraShakeAmplitude: {x: 10, y: 1}
+  _uiShakeTarget: {fileID: 0}
+  _shakeUi: 0
+  _uiShakeAmplitude: {x: 10, y: 6}
+  _shakeDurationSec: 0.28
+  _shakeFrequency: 36
+  _shakeDecay:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!1 &675730397
 GameObject:
   m_ObjectHideFlags: 0
@@ -1748,7 +1809,7 @@ MonoBehaviour:
   _glitchInterval: 0.035
   _flickerStrength: 0
   _useFlash: 1
-  _flashColor: {r: 0.2, g: 1, b: 1, a: 1}
+  _flashColor: {r: 1, g: 1, b: 1, a: 1}
   _flashStrength: 1
   _hideObjectAfterHide: 1
 --- !u!225 &813020015
@@ -1814,6 +1875,7 @@ GameObject:
   - component: {fileID: 880571362}
   - component: {fileID: 880571361}
   - component: {fileID: 880571360}
+  - component: {fileID: 880571364}
   m_Layer: 5
   m_Name: PlayerVersePanel
   m_TagString: Untagged
@@ -1862,7 +1924,7 @@ MonoBehaviour:
   _glitchInterval: 0.035
   _flickerStrength: 0
   _useFlash: 1
-  _flashColor: {r: 0.2, g: 1, b: 1, a: 1}
+  _flashColor: {r: 1, g: 1, b: 1, a: 1}
   _flashStrength: 0.45
   _hideObjectAfterHide: 1
 --- !u!225 &880571361
@@ -1915,6 +1977,78 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 880571358}
   m_CullTransparentMesh: 1
+--- !u!114 &880571364
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 880571358}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31bd9e46e8741e241a356350380b72f2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: RhAImers::RhAImers.UI.PlayerVerseImpactPresenter
+  _panelRectTransform: {fileID: 880571359}
+  _panelCanvasGroup: {fileID: 880571361}
+  _battleCanvas: {fileID: 557870923}
+  _worldCamera: {fileID: 538468731}
+  _opponentImpactTarget: {fileID: 952630934}
+  _holdDurationSec: 0.25
+  _travelDurationSec: 0.45
+  _endScale: 0.08
+  _arcHeight: 40
+  _fadeStartNormalized: 0.65
+  _movementCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  _scaleCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  _visibleAlpha: 1
+  _keepHiddenAfterImpact: 1
 --- !u!1 &890220592
 GameObject:
   m_ObjectHideFlags: 0
@@ -1973,9 +2107,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
+    m_Font: {fileID: 12800000, guid: 8bb27d14c4b962a479db20f06abe2111, type: 3}
     m_FontSize: 60
-    m_FontStyle: 0
+    m_FontStyle: 1
     m_BestFit: 0
     m_MinSize: 0
     m_MaxSize: 60
@@ -1994,6 +2128,37 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 890220592}
   m_CullTransparentMesh: 1
+--- !u!1 &952630933
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 952630934}
+  m_Layer: 0
+  m_Name: VerseImpactTarget
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &952630934
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 952630933}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.7, z: 0.1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1656412413}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &973395416
 GameObject:
   m_ObjectHideFlags: 0
@@ -2253,12 +2418,14 @@ MonoBehaviour:
   _rhymeAddedClip: {fileID: 8300000, guid: 387a74aca2203f746b0bd9dfc2f63d83, type: 3}
   _rhymeRemovedClip: {fileID: 8300000, guid: 20214926fd41a3246b0803a44b131704, type: 3}
   _verseLineShownClip: {fileID: 8300000, guid: 225f16cf6ef27e34b92f7c41fb0d2c2c, type: 3}
+  _playerVerseImpactClip: {fileID: 8300000, guid: d90c96ff351bbaf48abb600c0c826d83, type: 3}
   _allTurnsFinishedClip: {fileID: 8300000, guid: bd25d4157d294ce4a95b9a5989d7b62f, type: 3}
   _masterVolume: 1
   _startSignalVolume: 1
   _panelShowVolume: 1
   _rhymeVolume: 1
   _verseLineVolume: 1
+  _playerVerseImpactVolume: 1
   _resultVolume: 1
 --- !u!82 &1059174872
 AudioSource:
@@ -2764,9 +2931,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 60
-    m_FontStyle: 0
+    m_Font: {fileID: 12800000, guid: 8bb27d14c4b962a479db20f06abe2111, type: 3}
+    m_FontSize: 45
+    m_FontStyle: 1
     m_BestFit: 0
     m_MinSize: 0
     m_MaxSize: 72
@@ -2903,7 +3070,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: -8679921383154817045, guid: 803213e889f022d4f8e0f83643bc498e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 952630934}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 803213e889f022d4f8e0f83643bc498e, type: 3}
 --- !u!1 &1372610353
@@ -3214,6 +3384,11 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1574020740}
   m_CullTransparentMesh: 1
+--- !u!4 &1656412413 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 803213e889f022d4f8e0f83643bc498e, type: 3}
+  m_PrefabInstance: {fileID: 1369003714}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1659931787
 GameObject:
   m_ObjectHideFlags: 0
