@@ -55,6 +55,7 @@ namespace RhAImers.Core
 
         public GameState CurrentState { get; private set; }
         public BattleSettings CurrentSettings { get; private set; }
+        public BattleResult LastBattleResult { get; private set; }
 
         private void Awake()
         {
@@ -432,7 +433,7 @@ namespace RhAImers.Core
 
             //// 結果の表示
             //CurrentState = GameState.Result;
-            //var result = new BattleResult(currentSession.Turns, scores);                                // 結果データの生成
+            LastBattleResult = new BattleResult(currentSession.Turns, scores);                                // 結果データの保存
             //_uiManager.ShowResult(result);                                                              // 結果の表示
 
             SceneManager.LoadScene(ResultSceneName);
