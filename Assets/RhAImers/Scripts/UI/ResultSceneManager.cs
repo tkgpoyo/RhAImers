@@ -7,16 +7,33 @@ using UnityEngine.UI;
 
 namespace RhAImers.UI
 {
+    [Serializable]
+    public struct TurnScoreUI
+    {
+        public TextMeshProUGUI RhymeCountText;
+        public TextMeshProUGUI AverageHardnessText;
+        public TextMeshProUGUI RelevanceCountText;
+        public TextMeshProUGUI TotalText;
+
+        public void SetData(RhAImers.Scoring.TurnScore score)
+        {
+            if (RhymeCountText != null) RhymeCountText.text = $"{score.RhymeCount}";
+            if (AverageHardnessText != null) AverageHardnessText.text = $"{score.AverageHardness:F2}";
+            if (RelevanceCountText != null) RelevanceCountText.text = $"{score.RelevanceCount}";
+            if (TotalText != null) TotalText.text = $"{score.Total}";
+        }
+    }
+
     public class ResultSceneManager : MonoBehaviour
     {
         [Header("Buttons")]
         [SerializeField] private Button _modeSelectionButton;
 
-        [Header("Score UI (Temporary)")]
+        [Header("Score UI")]
         [SerializeField] private TextMeshProUGUI _totalScoreText;
-        [SerializeField] private TextMeshProUGUI _turn1ScoreText;
-        [SerializeField] private TextMeshProUGUI _turn2ScoreText;
-        [SerializeField] private TextMeshProUGUI _turn3ScoreText;
+        [SerializeField] private TurnScoreUI _turn1ScoreUI;
+        [SerializeField] private TurnScoreUI _turn2ScoreUI;
+        [SerializeField] private TurnScoreUI _turn3ScoreUI;
 
         public event Action ModeSelectionSelected;
 
@@ -42,25 +59,22 @@ namespace RhAImers.UI
 
             if (_totalScoreText != null)
             {
-                _totalScoreText.text = $"TOTAL SCORE: {result.TotalScore * 100}";
+                _totalScoreText.text = $"{result.TotalScore}";
             }
 
-            if (_turn1ScoreText != null && result.TurnScores.Count > 0)
+            if (result.TurnScores.Count > 0)
             {
-                var t1 = result.TurnScores[0];
-                _turn1ScoreText.text = $"TURN 1\n韻の個数: {t1.RhymeCount} / 韻の硬さ: {t1.AverageHardness:F2} / 関連度ボーナス: x{t1.RelevanceCount}\nTurn Total: {t1.Total}";
+                _turn1ScoreUI.SetData(result.TurnScores[0]);
             }
 
-            if (_turn2ScoreText != null && result.TurnScores.Count > 1)
+            if (result.TurnScores.Count > 1)
             {
-                var t2 = result.TurnScores[1];
-                _turn2ScoreText.text = $"TURN 2\n韻の個数: {t2.RhymeCount} / 韻の硬さ: {t2.AverageHardness:F2} / 関連度ボーナス: x{t2.RelevanceCount}\nTurn Total: {t2.Total}";
+                _turn2ScoreUI.SetData(result.TurnScores[1]);
             }
 
-            if (_turn3ScoreText != null && result.TurnScores.Count > 2)
+            if (result.TurnScores.Count > 2)
             {
-                var t3 = result.TurnScores[2];
-                _turn3ScoreText.text = $"TURN 3\n韻の個数: {t3.RhymeCount} / 韻の硬さ: {t3.AverageHardness:F2} / 関連度ボーナス: x{t3.RelevanceCount}\nTurn Total: {t3.Total}";
+                _turn3ScoreUI.SetData(result.TurnScores[2]);
             }
         }
 
