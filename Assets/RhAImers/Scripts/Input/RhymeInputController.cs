@@ -63,6 +63,11 @@ namespace RhAImers.Input
                     inputText.raycastTarget = false;
                     inputText.color = inputTextColor;
                     inputText.alpha = 1f;
+                    inputText.textWrappingMode = TextWrappingModes.NoWrap;
+                    inputText.overflowMode = TextOverflowModes.Overflow;
+                    inputText.enabled = true;
+                    inputText.canvasRenderer.SetAlpha(1f);
+                    inputText.SetAllDirty();
 
                     // TMP_InputFieldはフォーカス時に自身のPoint SizeをTextへ反映するため、
                     // 移行前のTextサイズと同期しておく。
@@ -89,6 +94,7 @@ namespace RhAImers.Input
         {
             if (_rhymeInputField != null)
             {
+                _rhymeInputField.onValueChanged.AddListener(HandleInputValueChanged);
                 _rhymeInputField.onEndEdit.AddListener(HandleInputEnded);
             }
 
@@ -107,6 +113,7 @@ namespace RhAImers.Input
         {
             if (_rhymeInputField != null)
             {
+                _rhymeInputField.onValueChanged.RemoveListener(HandleInputValueChanged);
                 _rhymeInputField.onEndEdit.RemoveListener(HandleInputEnded);
             }
 
@@ -264,6 +271,22 @@ namespace RhAImers.Input
         private void HandleInputSubmitted(string word)
         {
             TryAddRhyme(word);
+        }
+
+        private void HandleInputValueChanged(string value)
+        {
+            if (_rhymeInputField == null || _rhymeInputField.textComponent == null)
+            {
+                return;
+            }
+
+            TMP_Text inputText = _rhymeInputField.textComponent;
+            inputText.color = new Color32(50, 50, 50, 255);
+            inputText.alpha = 1f;
+            inputText.enabled = true;
+            inputText.canvasRenderer.SetAlpha(1f);
+            inputText.SetAllDirty();
+            inputText.ForceMeshUpdate(ignoreActiveState: true, forceTextReparsing: true);
         }
 
         private void HandleInputEnded(string word)
