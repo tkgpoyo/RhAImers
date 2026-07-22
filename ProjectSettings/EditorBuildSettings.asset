@@ -17,6 +17,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/RhAImers/Scenes/RhAImers0624.unity
     guid: 296f21048dffb62459dc1b8165ec092c
+  - enabled: 1
+    path: Assets/RhAImers/Scenes/ResultScene.unity
+    guid: 9bc27760affa94eb9870589b0cdf635e
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   m_UseUCBPForAssetBundles: 0
