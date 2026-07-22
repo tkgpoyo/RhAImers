@@ -121,6 +121,65 @@ namespace RhAImers.VerseGeneration
             return sb.ToString();
         }
 
+        #region 拡張 4段階
+        public string BuildPlayerVersePrompt_1(IReadOnlyList<string> rhymes)
+        {
+            var sb = new StringBuilder();
+            sb.Append(
+@" 以下のライム群を用いてラップバトルのバースを生成する．バースを生成する上で，相手への攻撃，自分の誇示に用いることができるライムのみ抽出しなさい．出力は各グループとそれに含まれるライムのみにし，他の語彙を含まないこと．出力はライムを/で区切るだけにしなさい．ライムは4つにすること．5つ以上にしてはならない．
+
+ライム群：")
+              .Append(string.Join(',', rhymes));
+            return sb.ToString();
+        }
+
+        public string BuildPlayerVersePrompt_2(string selectedRhymesLine)
+        {
+            var sb = new StringBuilder();
+            sb.Append(
+@"以下の単語群を用いて，ラップをしている相手を攻撃するか自分を誇示するような文章を単語一つに対して一行，合計4行で短いフレーズを生成しなさい．各行15文字以内にすること．各単語は各行の最後に配置すること．各行以外の内容は含めるな．
+
+例：変えてやるよ人生観
+持った才能まるで晋平太
+
+ライム群：")
+              .Append(selectedRhymesLine);
+            return sb.ToString();
+        }
+        public string BuildPlayerVersePrompt_3(string selectedRhymesLine, string baseVerse)
+        {
+            var sb = new StringBuilder();
+            sb.Append(
+@" 以下の文章をラップのような文章に整えてほしい．各行を並び替えたり，適切な接続をしたりしなさい．また，次のライム郡が各行末に必ず来るようにしなさい．ただしライム群のライムが4つ未満であればその限りではない．出力は4行にすること．句読点を入れてはならない．
+
+例：こいつは顔面チンパンジー
+ラップのレベルは一般人
+こいつを細切れにする俺がビンラディン
+
+ライム郡：")
+              .AppendLine(selectedRhymesLine)
+              .Append("文章：")
+              .Append(baseVerse);
+            return sb.ToString();
+        }
+        public string BuildPlayerVersePrompt_4(string selectedRhymesLine, string baseVerse)
+        {
+            var sb = new StringBuilder();
+            sb.Append(
+@" 以下の文章に対して，各行の長さを15～17モーラになるようにすること．また，各行の語末には次のライム郡を必ずつけること．出力は句読点を含まない4行の文章のみにすること．
+
+例：こいつは顔面チンパンジー
+ラップのレベルは一般人
+こいつを細切れにする俺がビンラディン
+
+ライム群：")
+              .AppendLine(selectedRhymesLine)
+              .Append("文章：")
+              .Append(baseVerse);
+            return sb.ToString();
+        }
+        #endregion  (拡張 4段階)
+
         private string SelectRhymeKey()
         {
             var keys = _rhymeDictionary.GetKeys();
