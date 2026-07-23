@@ -147,7 +147,7 @@ namespace RhAImers.UI
 
         [Header("Result UI")]
         [SerializeField] private GameObject _resultPanel;
-        [SerializeField] private Button _retryButton;
+        [SerializeField] private Button _resultButton;
 
         [Header("Verse Line Presentation")]
         [SerializeField] private bool _showVerseLineByLine = true;
@@ -202,7 +202,7 @@ namespace RhAImers.UI
         private int _invalidInputVibrationId;
         #endregion (vibration関連)
 
-        public event Action RetrySelected;
+        public event Action ResultSelected;
         public event Action<int> InputRhymeRemoveAtRequested;
         public event Action BattleStartSignalShown;
         public event Action<BattleUiPanelKind> BattlePanelShown;
@@ -228,17 +228,17 @@ namespace RhAImers.UI
 
         private void OnEnable()
         {
-            if (_retryButton != null)
+            if (_resultButton != null)
             {
-                _retryButton.onClick.AddListener(HandleRetryButtonClicked);
+                _resultButton.onClick.AddListener(HandleRetryButtonClicked);
             }
         }
 
         private void OnDisable()
         {
-            if (_retryButton != null)
+            if (_resultButton != null)
             {
-                _retryButton.onClick.RemoveListener(HandleRetryButtonClicked);
+                _resultButton.onClick.RemoveListener(HandleRetryButtonClicked);
             }
 
             CancelBattleStartSignal();
@@ -1611,7 +1611,7 @@ namespace RhAImers.UI
 
         private void HandleRetryButtonClicked()
         {
-            RetrySelected?.Invoke();
+            ResultSelected?.Invoke();
         }
 
         /// <summary>
@@ -2300,10 +2300,10 @@ namespace RhAImers.UI
                 }
             }
 
-            if (_retryButton != null)
+            if (_resultButton != null)
             {
-                _retryButton.gameObject.SetActive(visible);
-                _retryButton.interactable = visible;
+                _resultButton.gameObject.SetActive(visible);
+                _resultButton.interactable = visible;
             }
         }
 

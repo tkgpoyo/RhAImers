@@ -57,7 +57,7 @@ namespace RhAImers.Debugging
 
             if (_uiManager != null)
             {
-                _uiManager.RetrySelected += HandleRetrySelected;
+                _uiManager.ResultSelected += HandleResultSelected;
             }
         }
 
@@ -71,7 +71,7 @@ namespace RhAImers.Debugging
 
             if (_uiManager != null)
             {
-                _uiManager.RetrySelected -= HandleRetrySelected;
+                _uiManager.ResultSelected -= HandleResultSelected;
             }
 
             StopTurnStartCoroutine();
@@ -122,7 +122,7 @@ namespace RhAImers.Debugging
             }
         }
 
-        private void HandleRetrySelected()
+        private void HandleResultSelected()
         {
             RestartDebugBattle();
         }

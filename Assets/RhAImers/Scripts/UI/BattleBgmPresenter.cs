@@ -61,7 +61,7 @@ namespace RhAImers.UI
 
             _uiManager.BattleStartSignalShown += HandleBattleStartSignalShown;
             _uiManager.BattleResultShown += HandleBattleResultShown;
-            _uiManager.RetrySelected += HandleRetrySelected;
+            _uiManager.ResultSelected += HandleResultSelected;
         }
 
         private void OnDisable()
@@ -70,7 +70,7 @@ namespace RhAImers.UI
             {
                 _uiManager.BattleStartSignalShown -= HandleBattleStartSignalShown;
                 _uiManager.BattleResultShown -= HandleBattleResultShown;
-                _uiManager.RetrySelected -= HandleRetrySelected;
+                _uiManager.ResultSelected -= HandleResultSelected;
             }
 
             StopFadeCoroutine();
@@ -136,7 +136,7 @@ namespace RhAImers.UI
             StopBgm();
         }
 
-        private void HandleRetrySelected()
+        private void HandleResultSelected()
         {
             if (!_restartOnRetry)
             {

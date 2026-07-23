@@ -145,7 +145,7 @@ namespace RhAImers.Core
 
                     if (_uiManager != null)
                     {
-                        _uiManager.RetrySelected += HandleRetrySelected;
+                        _uiManager.ResultSelected += HandleResultSelected;
                     }
 
 
@@ -195,7 +195,7 @@ namespace RhAImers.Core
 
             if (_uiManager != null)
             {
-                _uiManager.RetrySelected -= HandleRetrySelected;
+                _uiManager.ResultSelected -= HandleResultSelected;
                 _uiManager = null;
             }
 
@@ -324,15 +324,17 @@ namespace RhAImers.Core
             }
         }
         /// <summary>
-        /// <see cref="UIManager.RetrySelected">イベントのイベントハンドラ
+        /// <see cref="UIManager.ResultSelected">イベントのイベントハンドラ
         /// </summary>
-        private void HandleRetrySelected()
+        private void HandleResultSelected()
         {
-            if (CurrentState is GameState.Result)
-            {
-                // TODO: リセット処理必要かも？
-                StartGame();                            // ゲーム開始
-            }
+            // TODO: 雑かも
+            SceneManager.LoadScene(ResultSceneName);
+            //if (CurrentState is GameState.Result)
+            //{
+                //// TODO: リセット処理必要かも？
+                //StartGame();                            // ゲーム開始
+            //}
         }
         #endregion (イベント処理)
 
@@ -435,9 +437,9 @@ namespace RhAImers.Core
             //// 結果の表示
             //CurrentState = GameState.Result;
             LastBattleResult = new BattleResult(currentSession.Turns, scores);                                // 結果データの保存
-            //_uiManager.ShowResult(result);                                                              // 結果の表示
+            _uiManager.ShowResult(LastBattleResult);                                                              // 結果の表示
 
-            SceneManager.LoadScene(ResultSceneName);
+            //SceneManager.LoadScene(ResultSceneName);
         }
 
         /// <summary>
