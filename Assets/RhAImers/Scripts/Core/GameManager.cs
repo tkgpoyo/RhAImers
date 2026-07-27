@@ -74,7 +74,7 @@ namespace RhAImers.Core
             var rhymeDictionary = RhymeDictionaryLoader.LoadFromResources();                                            // ライム辞書
             //_verseGenerationService = new LlmVerseGenerationService(_llmClient, new(rhymeDictionary));                  // バース生成サービス
             _verseGenerationService = new MultipleLlmVerseGenerationService(_llmClient, new(rhymeDictionary));                  // バース生成サービス
-            _scoreCalculator = new ScoreCalculator(new(new()), new(_llmClient, new(rhymeDictionary)));                  // 得点計算クラス
+            _scoreCalculator = new ScoreCalculator(new(new(), _llmClient, new(rhymeDictionary)), new(_llmClient, new(rhymeDictionary)));                  // 得点計算クラス
         }
 
         private void OnEnable()
