@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using RhAImers.Battle;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -46,13 +47,13 @@ namespace RhAImers.UI
 
         private struct VerseLineVisualState
         {
-            public Text Text;
+            public TMP_Text Text;
             public CanvasGroup CanvasGroup;
             public Color FinalColor;
             public Vector3 FinalScale;
             public float FinalCanvasGroupAlpha;
 
-            public VerseLineVisualState(Text text, CanvasGroup canvasGroup, Color finalColor, Vector3 finalScale, float finalCanvasGroupAlpha)
+            public VerseLineVisualState(TMP_Text text, CanvasGroup canvasGroup, Color finalColor, Vector3 finalScale, float finalCanvasGroupAlpha)
             {
                 Text = text;
                 CanvasGroup = canvasGroup;
@@ -116,7 +117,7 @@ namespace RhAImers.UI
         [SerializeField] private ScrollRect _inputRhymesScrollRect;
         [SerializeField] private RectTransform _inputRhymesContent;
         [SerializeField] private GameObject _inputRhymeTabTemplate;
-        [SerializeField] private Text _inputRhymesEmptyText;
+        [SerializeField] private TMP_Text _inputRhymesEmptyText;
         [SerializeField] private string _rhymeTabWordTextName = "WordText";
         [SerializeField] private string _rhymeTabRemoveButtonName = "RemoveButton";
 
@@ -137,12 +138,12 @@ namespace RhAImers.UI
         [SerializeField, Min(1)] private int _rhymeTabMinFontSize = 12;
 
         [Header("Battle UI")]
-        [SerializeField] private Text _opponentVerseText;
-        [SerializeField] private Text _inputTimerText;
-        [SerializeField] private Text _inputRhymesText;
-        [SerializeField] private Text _generatedVerseText;
-        [SerializeField] private Text _resultText;
-        [SerializeField] private Text _statusText;
+        [SerializeField] private TMP_Text _opponentVerseText;
+        [SerializeField] private TMP_Text _inputTimerText;
+        [SerializeField] private TMP_Text _inputRhymesText;
+        [SerializeField] private TMP_Text _generatedVerseText;
+        [SerializeField] private TMP_Text _resultText;
+        [SerializeField] private TMP_Text _statusText;
 
         [Header("Result UI")]
         [SerializeField] private GameObject _resultPanel;
@@ -167,9 +168,9 @@ namespace RhAImers.UI
 
         [Header("Verse Line Objects")]
         [SerializeField] private RectTransform _opponentVerseLinesRoot;
-        [SerializeField] private Text _opponentVerseLineTemplate;
+        [SerializeField] private TMP_Text _opponentVerseLineTemplate;
         [SerializeField] private RectTransform _playerVerseLinesRoot;
-        [SerializeField] private Text _playerVerseLineTemplate;
+        [SerializeField] private TMP_Text _playerVerseLineTemplate;
         [SerializeField] private bool _autoBuildVerseLineObjects = true;
         [SerializeField] private bool _hideFallbackVerseTextWhenUsingLineObjects = true;
         [SerializeField] private bool _applyVerseLineRootLayout = true;
@@ -186,7 +187,7 @@ namespace RhAImers.UI
         private CancellationTokenSource _battleStartSignalCts;
         private CancellationTokenSource _verseLinePresentationCts;
         private Vector2 _battleStartSignalCenterPosition;
-        private Text _activeVerseLineText;
+        private TMP_Text _activeVerseLineText;
         private CanvasGroup _activeVerseLineCanvasGroup;
         private Color _activeVerseLineOriginalColor;
         private Vector3 _activeVerseLineOriginalScale;
@@ -639,7 +640,7 @@ namespace RhAImers.UI
             _currentPhase = phase;
         }
 
-        private async UniTask StartVerseLinePresentationAsync(Text target, Verse verse, BattleUiPanelKind panelKind)
+        private async UniTask StartVerseLinePresentationAsync(TMP_Text target, Verse verse, BattleUiPanelKind panelKind)
         {
             CancelVerseLinePresentation();
 
@@ -651,7 +652,7 @@ namespace RhAImers.UI
             string rawText = verse == null ? string.Empty : verse.Text;
             IReadOnlyList<VerseHighlight> highlights = verse == null ? null : verse.Highlights;
 
-            if (TryGetVerseLineObjectPresentation(panelKind, out RectTransform lineRoot, out Text lineTemplate, out List<GameObject> lineInstances))
+            if (TryGetVerseLineObjectPresentation(panelKind, out RectTransform lineRoot, out TMP_Text lineTemplate, out List<GameObject> lineInstances))
             {
                 SetVerseFallbackTextVisible(target, false);
                 lineRoot.gameObject.SetActive(true);
@@ -726,7 +727,7 @@ namespace RhAImers.UI
 
         private async UniTask PresentVerseLineObjectsAsync(
             RectTransform lineRoot,
-            Text lineTemplate,
+            TMP_Text lineTemplate,
             List<GameObject> lineInstances,
             string rawText,
             IReadOnlyList<VerseHighlight> highlights,
@@ -805,7 +806,7 @@ namespace RhAImers.UI
         }
 
         private async UniTask PresentVerseLineByLineAsync(
-            Text target,
+            TMP_Text target,
             string rawText,
             IReadOnlyList<VerseHighlight> highlights,
             BattleUiPanelKind panelKind,
@@ -863,7 +864,7 @@ namespace RhAImers.UI
             }
         }
 
-        private async UniTask AnimateVerseLineAppearanceAsync(Text target, float duration, CancellationToken ct)
+        private async UniTask AnimateVerseLineAppearanceAsync(TMP_Text target, float duration, CancellationToken ct)
         {
             if (target == null || target.rectTransform == null)
             {
@@ -884,7 +885,7 @@ namespace RhAImers.UI
         }
 
         private async UniTask AnimateVerseLineAppearanceAsync(
-            Text target,
+            TMP_Text target,
             float duration,
             CancellationToken ct,
             Color finalColor,
@@ -994,7 +995,7 @@ namespace RhAImers.UI
             return Mathf.Max(0f, _verseLineFadeInDurationSec);
         }
 
-        private void CaptureVerseLineVisualState(Text target)
+        private void CaptureVerseLineVisualState(TMP_Text target)
         {
             if (target == null)
             {
@@ -1012,7 +1013,7 @@ namespace RhAImers.UI
             );
         }
 
-        private void CaptureVerseLineVisualState(Text target, Color finalColor, Vector3 finalScale, CanvasGroup canvasGroup, float finalCanvasGroupAlpha)
+        private void CaptureVerseLineVisualState(TMP_Text target, Color finalColor, Vector3 finalScale, CanvasGroup canvasGroup, float finalCanvasGroupAlpha)
         {
             if (target == null)
             {
@@ -1028,7 +1029,7 @@ namespace RhAImers.UI
             _activeVerseLineOriginalCanvasGroupAlpha = finalCanvasGroupAlpha;
         }
 
-        private void ResetVerseLineVisualState(Text target)
+        private void ResetVerseLineVisualState(TMP_Text target)
         {
             if (target == null || _activeVerseLineText != target)
             {
@@ -1100,8 +1101,8 @@ namespace RhAImers.UI
 
         private void PrepareVerseLineObjectTemplate(
             ref RectTransform lineRoot,
-            ref Text lineTemplate,
-            Text fallbackText,
+            ref TMP_Text lineTemplate,
+            TMP_Text fallbackText,
             string rootName,
             string templateName)
         {
@@ -1117,7 +1118,7 @@ namespace RhAImers.UI
 
             if (lineRoot != null && lineTemplate == null)
             {
-                lineTemplate = lineRoot.GetComponentInChildren<Text>(true);
+                lineTemplate = lineRoot.GetComponentInChildren<TMP_Text>(true);
             }
 
             if (_autoBuildVerseLineObjects && lineRoot != null && lineTemplate == null && fallbackText != null)
@@ -1125,7 +1126,7 @@ namespace RhAImers.UI
                 GameObject templateObject = Instantiate(fallbackText.gameObject, lineRoot);
                 templateObject.name = templateName;
 
-                lineTemplate = templateObject.GetComponent<Text>();
+                lineTemplate = templateObject.GetComponent<TMP_Text>();
 
                 if (lineTemplate != null)
                 {
@@ -1208,7 +1209,7 @@ namespace RhAImers.UI
         private bool TryGetVerseLineObjectPresentation(
             BattleUiPanelKind panelKind,
             out RectTransform lineRoot,
-            out Text lineTemplate,
+            out TMP_Text lineTemplate,
             out List<GameObject> lineInstances)
         {
             switch (panelKind)
@@ -1235,7 +1236,7 @@ namespace RhAImers.UI
             return lineRoot != null && lineTemplate != null && lineInstances != null;
         }
 
-        private void SetVerseFallbackTextVisible(Text target, bool visible)
+        private void SetVerseFallbackTextVisible(TMP_Text target, bool visible)
         {
             if (!_hideFallbackVerseTextWhenUsingLineObjects || target == null)
             {
@@ -1270,7 +1271,7 @@ namespace RhAImers.UI
 
         private List<VerseLineVisualState> BuildVerseLineTextInstances(
             RectTransform lineRoot,
-            Text lineTemplate,
+            TMP_Text lineTemplate,
             List<GameObject> lineInstances,
             string rawText,
             IReadOnlyList<VerseHighlight> highlights,
@@ -1290,7 +1291,7 @@ namespace RhAImers.UI
             {
                 VerseLineSegment lineSegment = lineSegments[i];
 
-                Text lineText = Instantiate(lineTemplate, lineRoot);
+                TMP_Text lineText = Instantiate(lineTemplate, lineRoot);
                 lineText.name = $"VerseLine_{i + 1}";
                 lineText.gameObject.SetActive(true);
                 lineText.raycastTarget = false;
@@ -1323,7 +1324,7 @@ namespace RhAImers.UI
             return lineStates;
         }
 
-        private CanvasGroup EnsureVerseLineCanvasGroup(Text lineText)
+        private CanvasGroup EnsureVerseLineCanvasGroup(TMP_Text lineText)
         {
             if (lineText == null)
             {
@@ -1340,7 +1341,7 @@ namespace RhAImers.UI
             return canvasGroup;
         }
 
-        private void EnsureVerseLineLayoutElement(Text lineText)
+        private void EnsureVerseLineLayoutElement(TMP_Text lineText)
         {
             if (lineText == null)
             {
@@ -1872,7 +1873,7 @@ namespace RhAImers.UI
                 PrepareInputRhymeTabLayout(tab, tabWidth);
                 tab.SetActive(true);
 
-                Text wordText = FindText(tab.transform, _rhymeTabWordTextName);
+                TMP_Text wordText = FindText(tab.transform, _rhymeTabWordTextName);
                 if (wordText != null)
                 {
                     ConfigureRhymeTabWordText(wordText, rhymeWord, tabWidth);
@@ -2019,19 +2020,19 @@ namespace RhAImers.UI
             layoutElement.ignoreLayout = false;
         }
 
-        private void ConfigureRhymeTabWordText(Text wordText, string rhymeWord, float tabWidth)
+        private void ConfigureRhymeTabWordText(TMP_Text wordText, string rhymeWord, float tabWidth)
         {
             if (wordText == null)
             {
                 return;
             }
 
-            wordText.supportRichText = true;
+            wordText.richText = true;
             wordText.text = rhymeWord;
 
             if (_centerRhymeTabWordText)
             {
-                wordText.alignment = TextAnchor.MiddleCenter;
+                wordText.alignment = TextAlignmentOptions.Center;
             }
 
             if (!_shrinkRhymeTextWhenOverflow)
@@ -2039,11 +2040,11 @@ namespace RhAImers.UI
                 return;
             }
 
-            int originalFontSize = Mathf.Max(wordText.fontSize, _rhymeTabMinFontSize);
+            int originalFontSize = Mathf.Max(Mathf.RoundToInt(wordText.fontSize), _rhymeTabMinFontSize);
             float availableTextWidth = Mathf.Max(1f, tabWidth - Mathf.Max(0f, _rhymeTabTextHorizontalPadding));
             float preferredTextWidth = CalculateRhymeTextPreferredWidth(wordText, rhymeWord, originalFontSize);
 
-            wordText.resizeTextForBestFit = false;
+            wordText.enableAutoSizing = false;
 
             if (preferredTextWidth <= availableTextWidth)
             {
@@ -2077,11 +2078,11 @@ namespace RhAImers.UI
                 return GetRhymeTabPreferredWidth();
             }
 
-            Text templateWordText = _inputRhymeTabTemplate != null
+            TMP_Text templateWordText = _inputRhymeTabTemplate != null
                 ? FindText(_inputRhymeTabTemplate.transform, _rhymeTabWordTextName)
                 : null;
 
-            int fontSize = templateWordText != null ? templateWordText.fontSize : 24;
+            int fontSize = templateWordText != null ? Mathf.RoundToInt(templateWordText.fontSize) : 24;
             float textWidth = CalculateRhymeTextPreferredWidth(templateWordText, rhymeWord, fontSize);
             float preferredWidth = textWidth + Mathf.Max(0f, _rhymeTabTextHorizontalPadding);
 
@@ -2092,7 +2093,7 @@ namespace RhAImers.UI
             return Mathf.Clamp(preferredWidth, minWidth, maxWidth);
         }
 
-        private float CalculateRhymeTextPreferredWidth(Text sourceText, string text, int fontSize)
+        private float CalculateRhymeTextPreferredWidth(TMP_Text sourceText, string text, int fontSize)
         {
             if (string.IsNullOrEmpty(text))
             {
@@ -2103,11 +2104,10 @@ namespace RhAImers.UI
             {
                 try
                 {
-                    Vector2 generationExtents = new Vector2(10000f, Mathf.Max(1f, GetRhymeTabPreferredHeight()));
-                    TextGenerationSettings settings = sourceText.GetGenerationSettings(generationExtents);
-                    settings.fontSize = Mathf.Max(1, fontSize);
-
-                    float preferredWidth = sourceText.cachedTextGeneratorForLayout.GetPreferredWidth(text, settings) / sourceText.pixelsPerUnit;
+                    float previousFontSize = sourceText.fontSize;
+                    sourceText.fontSize = Mathf.Max(1, fontSize);
+                    float preferredWidth = sourceText.GetPreferredValues(text, 10000f, Mathf.Max(1f, GetRhymeTabPreferredHeight())).x;
+                    sourceText.fontSize = previousFontSize;
 
                     if (preferredWidth > 1f && !float.IsNaN(preferredWidth) && !float.IsInfinity(preferredWidth))
                     {
@@ -2198,15 +2198,15 @@ namespace RhAImers.UI
             }
         }
 
-        private Text FindText(Transform root, string preferredName)
+        private TMP_Text FindText(Transform root, string preferredName)
         {
             Transform preferred = FindChildRecursive(root, preferredName);
-            if (preferred != null && preferred.TryGetComponent(out Text preferredText))
+            if (preferred != null && preferred.TryGetComponent(out TMP_Text preferredText))
             {
                 return preferredText;
             }
 
-            return root.GetComponentInChildren<Text>(true);
+            return root.GetComponentInChildren<TMP_Text>(true);
         }
 
         private Button FindButton(Transform root, string preferredName)
@@ -2330,14 +2330,14 @@ namespace RhAImers.UI
             SetText(_statusText, status);
         }
 
-        private void SetText(Text target, string value)
+        private void SetText(TMP_Text target, string value)
         {
             if (target == null)
             {
                 return;
             }
 
-            target.supportRichText = true;
+            target.richText = true;
             target.text = value;
         }
 

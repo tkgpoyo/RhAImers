@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Text;
 using Cysharp.Threading.Tasks;
 using RhAImers.UI;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -14,7 +15,7 @@ namespace RhAImers.Input
     public class RhymeInputController : MonoBehaviour
     {
         [Header("UI References")]
-        [SerializeField] private InputField _rhymeInputField;
+        [SerializeField] private TMP_InputField _rhymeInputField;
         [SerializeField] private Button _submitButton;
         [SerializeField] private UIManager _uiManager;
 
@@ -47,7 +48,38 @@ namespace RhAImers.Input
         {
             if (_rhymeInputField != null)
             {
-                _rhymeInputField.lineType = InputField.LineType.SingleLine;
+                // Legacy InputFieldからの移行後も、TMP_InputFieldが入力領域全体を
+                // Viewportとして使えるように構成を正規化する。
+                _rhymeInputField.textViewport = _rhymeInputField.transform as RectTransform;
+                _rhymeInputField.lineType = TMP_InputField.LineType.SingleLine;
+                _rhymeInputField.shouldActivateOnSelect = true;
+
+                if (_rhymeInputField.textComponent != null)
+                {
+                    TMP_Text inputText = _rhymeInputField.textComponent;
+                    float inputFontSize = Mathf.Max(1f, inputText.fontSize);
+                    Color inputTextColor = new Color32(50, 50, 50, 255);
+
+                    inputText.raycastTarget = false;
+                    inputText.color = inputTextColor;
+                    inputText.alpha = 1f;
+                    inputText.textWrappingMode = TextWrappingModes.NoWrap;
+                    inputText.overflowMode = TextOverflowModes.Overflow;
+                    inputText.enabled = true;
+                    inputText.canvasRenderer.SetAlpha(1f);
+                    inputText.SetAllDirty();
+
+                    // TMP_InputFieldはフォーカス時に自身のPoint SizeをTextへ反映するため、
+                    // 移行前のTextサイズと同期しておく。
+                    _rhymeInputField.pointSize = inputFontSize;
+                    _rhymeInputField.customCaretColor = true;
+                    _rhymeInputField.caretColor = inputTextColor;
+                }
+
+                if (_rhymeInputField.placeholder is UnityEngine.UI.Graphic placeholderGraphic)
+                {
+                    placeholderGraphic.raycastTarget = false;
+                }
             }
 
             if (_submitButton != null)
@@ -62,6 +94,7 @@ namespace RhAImers.Input
         {
             if (_rhymeInputField != null)
             {
+                _rhymeInputField.onValueChanged.AddListener(HandleInputValueChanged);
                 _rhymeInputField.onEndEdit.AddListener(HandleInputEnded);
             }
 
@@ -80,6 +113,7 @@ namespace RhAImers.Input
         {
             if (_rhymeInputField != null)
             {
+                _rhymeInputField.onValueChanged.RemoveListener(HandleInputValueChanged);
                 _rhymeInputField.onEndEdit.RemoveListener(HandleInputEnded);
             }
 
@@ -237,6 +271,22 @@ namespace RhAImers.Input
         private void HandleInputSubmitted(string word)
         {
             TryAddRhyme(word);
+        }
+
+        private void HandleInputValueChanged(string value)
+        {
+            if (_rhymeInputField == null || _rhymeInputField.textComponent == null)
+            {
+                return;
+            }
+
+            TMP_Text inputText = _rhymeInputField.textComponent;
+            inputText.color = new Color32(50, 50, 50, 255);
+            inputText.alpha = 1f;
+            inputText.enabled = true;
+            inputText.canvasRenderer.SetAlpha(1f);
+            inputText.SetAllDirty();
+            inputText.ForceMeshUpdate(ignoreActiveState: true, forceTextReparsing: true);
         }
 
         private void HandleInputEnded(string word)
