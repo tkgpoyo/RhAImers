@@ -1,15 +1,59 @@
 using System.Collections.Generic;
 using System;
+using Cysharp.Threading.Tasks;
+using RhAImers.VerseGeneration;
 
 namespace RhAImers.Scoring
 {
     public class RhymeHardnessEvaluator
     {
         private readonly VowelConverter _vowelConverter;
+        private readonly LlmClient _client;
+        private readonly PromptBuilder _promptBuilder;
 
-        public RhymeHardnessEvaluator(VowelConverter vowelConverter)
+        public RhymeHardnessEvaluator(VowelConverter vowelConverter, LlmClient client = null, PromptBuilder promptBuilder = null)
         {
             _vowelConverter = vowelConverter;
+            _client = client;
+            _promptBuilder = promptBuilder;
+        }
+
+        public async UniTask<float> EvaluateAsync(IReadOnlyList<string> originalWords)
+        {
+            if (originalWords == null || originalWords.Count <= 1)
+                return 0f;
+
+            IReadOnlyList<string> words = originalWords;
+
+            // LLMを使ってふりがなに変換
+            if (_client != null && _promptBuilder != null)
+            {
+                try
+                {
+                    var prompt = _promptBuilder.BuildPhoneticConversionPrompt(originalWords);
+                    var response = await _client.Request(prompt);
+                    if (!string.IsNullOrWhiteSpace(response))
+                    {
+                        var converted = response.Split(',');
+                        if (converted.Length == originalWords.Count)
+                        {
+                            var trimmed = new List<string>();
+                            foreach (var w in converted)
+                            {
+                                trimmed.Add(w.Trim());
+                            }
+                            words = trimmed;
+                            UnityEngine.Debug.Log($"ふりがな変換結果: {string.Join(", ", words)}");
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    UnityEngine.Debug.LogWarning($"ふりがな変換中にエラーが発生しました: {e.Message}");
+                }
+            }
+
+            return Evaluate(words);
         }
 
         public float Evaluate(IReadOnlyList<string> words)
