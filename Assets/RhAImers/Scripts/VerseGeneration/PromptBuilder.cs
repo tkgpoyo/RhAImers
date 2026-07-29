@@ -121,6 +121,29 @@ namespace RhAImers.VerseGeneration
             return sb.ToString();
         }
 
+        public string BuildPhoneticConversionPrompt(IReadOnlyList<string> words)
+        {
+            var sb = new StringBuilder();
+            sb.Append(
+@"以下の単語群について、それぞれの読み（ひらがなまたはカタカナ）を以下のルールに従って決定してください。
+
+ルール:
+- 漢字は適切な読みを選択してください。
+複数の読みが存在する場合は、入力された単語群全体で「母音の並び（韻）」が最も一致するように読みを優先して選択してください。
+- ひらがな・カタカナで入力された単語は、その表記をそのまま出力してください。
+- 出力順は入力順と同じにしてください。
+- 出力は各単語の読みのみをカンマ区切りで出力してください。
+- 説明、引用符、番号、改行などは一切不要です。
+
+例：
+入力：上手,宴,裏拳,燕
+出力：うわて,うたげ,うらけん,つばめ
+
+入力：")
+              .Append(string.Join(",", words));
+            return sb.ToString();
+        }
+
         #region 拡張 4段階
         public string BuildPlayerVersePrompt_1(IReadOnlyList<string> rhymes)
         {

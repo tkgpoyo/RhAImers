@@ -21,7 +21,7 @@ namespace RhAImers.Scoring
             foreach (var turn in turns)
             {
                 var rhymeCount = turn.InputRhymes.Count;
-                var averageHardness = _hardnessEvaluator.Evaluate(turn.InputRhymes);
+                var averageHardness = await _hardnessEvaluator.EvaluateAsync(turn.InputRhymes);
                 var relevanceCount = await _relevanceEvaluator.EvaluateAsync(turn.InputRhymes, turn.OpponentVerse.Text);
                 scores.Add(new TurnScore(rhymeCount, averageHardness, relevanceCount));
             }
