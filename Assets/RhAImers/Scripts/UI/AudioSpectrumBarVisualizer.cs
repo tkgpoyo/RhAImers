@@ -78,6 +78,7 @@ public sealed class AudioSpectrumBarVisualizer : MaskableGraphic
         SetVerticesDirty();
     }
 
+#if UNITY_EDITOR
     protected override void OnValidate()
     {
         base.OnValidate();
@@ -85,6 +86,7 @@ public sealed class AudioSpectrumBarVisualizer : MaskableGraphic
         EnsureBuffers();
         SetVerticesDirty();
     }
+#endif
 
     private void Update()
     {

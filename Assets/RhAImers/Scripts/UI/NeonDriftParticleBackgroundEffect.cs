@@ -71,6 +71,7 @@ public sealed class NeonDriftParticleBackgroundEffect : MaskableGraphic
         InitializeParticles();
     }
 
+#if UNITY_EDITOR
     protected override void OnValidate()
     {
         base.OnValidate();
@@ -79,6 +80,7 @@ public sealed class NeonDriftParticleBackgroundEffect : MaskableGraphic
         InitializeParticles();
         SetVerticesDirty();
     }
+#endif
 
     private void Update()
     {
