@@ -11,6 +11,7 @@ using UnityEngine.SceneManagement;
 using Cysharp.Threading.Tasks;
 using System.Threading;
 using RhAImers.AvatorMotion;
+using System.Linq;
 
 namespace RhAImers.Core
 {
@@ -25,6 +26,8 @@ namespace RhAImers.Core
         private const string ModeSelectionSceneName = "ModeSelectionScene";
         private const string BattleSceneName = "RhAImers0624";
         private const string ResultSceneName = "ResultScene";
+
+        private const string RANKING_KEY = "Ranking";
 
         /// <summary>最大ターン数</summary>
         /// <remarks>TODO: 将来的に削除する</remarks>
@@ -434,6 +437,9 @@ namespace RhAImers.Core
             _uiManager.ShowScoringLoading();                                                            // 得点計算中のUI表示
             var scores = await _scoreCalculator.CalculateAsync(currentSession.Turns);                   // 得点を取得
 
+            // ADD 2026/08/21 ota 得点の記録
+            UpdateRanking(scores.Sum(score => score.Total));
+
             //// 結果の表示
             //CurrentState = GameState.Result;
             LastBattleResult = new BattleResult(currentSession.Turns, scores);                                // 結果データの保存
@@ -490,6 +496,20 @@ namespace RhAImers.Core
                     _ => throw new NotImplementedException(),
                 };
             }
+        }
+
+        // ADD 2026/08/21 ota ランキング機能
+        private void UpdateRanking(int score)
+        {
+            var sRanking = PlayerPrefs.GetString(RANKING_KEY);
+            List<int> ranking = sRanking.Split(',')
+                                        .Where(sScore => int.TryParse(sScore, out _))
+                                        .Select(sScore => int.Parse(sScore)).ToList();
+            ranking.Add(score);
+            ranking = ranking.OrderByDescending(score => score).ToList();
+            Debug.Log($"ランキング：{string.Join(',', ranking.Take(10))}");
+            PlayerPrefs.SetString(RANKING_KEY, string.Join(',', ranking.Take(10)));
+            PlayerPrefs.Save();
         }
     }
 }
