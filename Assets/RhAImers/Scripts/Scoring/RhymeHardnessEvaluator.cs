@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System;
 using Cysharp.Threading.Tasks;
 using RhAImers.VerseGeneration;
+using System.Linq;
 
 namespace RhAImers.Scoring
 {
@@ -18,12 +19,14 @@ namespace RhAImers.Scoring
             _promptBuilder = promptBuilder;
         }
 
-        public async UniTask<float> EvaluateAsync(IReadOnlyList<string> originalWords)
+        // CHG 2026/08/21 ota 戻り値を float から Tuple<float, float> に変更（平均文字数の取得）
+        public async UniTask<(float averageHardness, float averageLength)> EvaluateAsync(IReadOnlyList<string> originalWords)
         {
             if (originalWords == null || originalWords.Count <= 1)
-                return 0f;
+                return new(0f, 0f);
 
             IReadOnlyList<string> words = originalWords;
+            string[] converted = originalWords.ToArray();
 
             // LLMを使ってふりがなに変換
             if (_client != null && _promptBuilder != null)
@@ -34,7 +37,7 @@ namespace RhAImers.Scoring
                     var response = await _client.Request(prompt);
                     if (!string.IsNullOrWhiteSpace(response))
                     {
-                        var converted = response.Split(',');
+                        converted = response.Split(',');
                         if (converted.Length == originalWords.Count)
                         {
                             var trimmed = new List<string>();
@@ -53,7 +56,7 @@ namespace RhAImers.Scoring
                 }
             }
 
-            return Evaluate(words);
+            return new(Evaluate(words), (float)converted.Average(w => w.Length));
         }
 
         public float Evaluate(IReadOnlyList<string> words)

@@ -47,9 +47,14 @@ namespace RhAImers.UI
                 // テスト用のモックデータを使用
                 var dummyTurnScores = new System.Collections.Generic.List<RhAImers.Scoring.TurnScore>
                 {
-                    new RhAImers.Scoring.TurnScore(5, 0.72f, 4),
-                    new RhAImers.Scoring.TurnScore(4, 0.70f, 3),
-                    new RhAImers.Scoring.TurnScore(6, 0.60f, 4)
+                    //new RhAImers.Scoring.TurnScore(5, 0.72f, 4),
+                    //new RhAImers.Scoring.TurnScore(4, 0.70f, 3),
+                    //new RhAImers.Scoring.TurnScore(6, 0.60f, 4)
+
+                    // ADD 2026/08/21 ota ライムの平均長さを引数に追加
+                    new RhAImers.Scoring.TurnScore(5, 0.72f, 4, 3.0f),
+                    new RhAImers.Scoring.TurnScore(4, 0.70f, 3, 3.0f),
+                    new RhAImers.Scoring.TurnScore(6, 0.60f, 4, 3.0f)
                 };
 
                 // BattleResultの生成 (TurnDataはテスト用のため空リストを渡す)
