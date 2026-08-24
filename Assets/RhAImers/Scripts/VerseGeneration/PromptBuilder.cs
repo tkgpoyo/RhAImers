@@ -144,6 +144,20 @@ namespace RhAImers.VerseGeneration
             return sb.ToString();
         }
 
+        public string BuildWordFilteringPrompt(IReadOnlyList<string> words)
+        {
+            var wordList = words != null && words.Count > 0 ? string.Join(",", words) : "";
+            var sb = new StringBuilder();
+            sb.Append(
+@"以下の単語群のうち、実在する日本語の単語のみをカンマ区切りで出力してください。存在しない単語や無意味な文字列は除外してください。
+すべて存在しない場合は「null」と出力してください。
+出力は抽出された単語のカンマ区切りのみとし、説明や注釈は一切不要です。
+
+入力：")
+              .Append(wordList);
+            return sb.ToString();
+        }
+
         #region 拡張 4段階
         public string BuildPlayerVersePrompt_1(IReadOnlyList<string> rhymes)
         {
@@ -202,6 +216,27 @@ namespace RhAImers.VerseGeneration
             return sb.ToString();
         }
         #endregion  (拡張 4段階)
+
+        public string BuildFeedbackPrompt(IReadOnlyList<TurnData> turns)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine(
+@"あなたはラップバトルの審査員です。
+これまでの全ターンのプレイヤーの韻の踏み方やバースについて、良かった点や韻の組み合わせの工夫などを評価し、フィードバックを作成してください。
+簡潔にコメントし、出力はフィードバック本文のみとしてください。
+
+【これまでのターン】");
+
+            for (int i = 0; i < turns.Count; i++)
+            {
+                sb.AppendLine($"--- ターン{i + 1} ---");
+                sb.AppendLine($"相手のバース:\n{turns[i].OpponentVerse.Text}");
+                sb.AppendLine($"プレイヤーが入力した韻語: {string.Join("・", turns[i].InputRhymes)}");
+                sb.AppendLine($"生成されたプレイヤーのバース:\n{turns[i].GeneratedPlayerVerse.Text}");
+            }
+
+            return sb.ToString();
+        }
 
         private string SelectRhymeKey()
         {
