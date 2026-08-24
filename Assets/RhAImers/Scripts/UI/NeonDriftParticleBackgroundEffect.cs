@@ -71,14 +71,15 @@ public sealed class NeonDriftParticleBackgroundEffect : MaskableGraphic
         InitializeParticles();
     }
 
-    protected override void OnValidate()
+#if UNITY_EDITOR
+    protected void OnValidate()
     {
-        base.OnValidate();
         raycastTarget = false;
         ApplyAutoStretch();
         InitializeParticles();
         SetVerticesDirty();
     }
+#endif
 
     private void Update()
     {

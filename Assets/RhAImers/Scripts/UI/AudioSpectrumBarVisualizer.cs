@@ -78,13 +78,14 @@ public sealed class AudioSpectrumBarVisualizer : MaskableGraphic
         SetVerticesDirty();
     }
 
-    protected override void OnValidate()
+#if UNITY_EDITOR
+    protected void OnValidate()
     {
-        base.OnValidate();
         raycastTarget = false;
         EnsureBuffers();
         SetVerticesDirty();
     }
+#endif
 
     private void Update()
     {
