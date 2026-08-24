@@ -40,8 +40,8 @@ namespace RhAImers.VerseGeneration
         /// </summary>
         public static LlmClient CreateFromEnvironment(string model = DefaultModel)
         {
-            //var apiKey = Environment.GetEnvironmentVariable(ApiKeyEnvironmentVariable, EnvironmentVariableTarget.User);
-            var apiKey = ApiKeyConfig.Instance.ApiKey;          // 2026/07/04 ota Change to use ScriptableObject for API key storage instead of environment variable
+            var apiKey = Environment.GetEnvironmentVariable(ApiKeyEnvironmentVariable, EnvironmentVariableTarget.User);
+            //var apiKey = ApiKeyConfig.Instance.ApiKey;          // 2026/07/04 ota Change to use ScriptableObject for API key storage instead of environment variable
             if (string.IsNullOrWhiteSpace(apiKey))
             {
                 throw new InvalidOperationException(

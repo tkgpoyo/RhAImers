@@ -43,6 +43,8 @@ namespace RhAImers.Core
         private CancellationTokenSource _inputRhymeCts = new();
         /// <summary>LLMクライアント</summary>
         private LlmClient _llmClient;
+        /// <summary>プロンプトビルダー</summary>
+        private PromptBuilder _promptBuilder;
 
         private RhymeInputController _rhymeInputController;
         private UIManager _uiManager;
@@ -75,6 +77,7 @@ namespace RhAImers.Core
             //_verseGenerationService = new LlmVerseGenerationService(_llmClient, new(new RhymeDictionary(new())));       // TODO: 仮実装のためちゃんと実装
             //_scoreCalculator = new ScoreCalculator(new(new()), new(_llmClient, new(new RhymeDictionary(new()))));       // TODO: 仮実装のためちゃんと実装
             var rhymeDictionary = RhymeDictionaryLoader.LoadFromResources();                                            // ライム辞書
+            _promptBuilder = new PromptBuilder(rhymeDictionary);
             //_verseGenerationService = new LlmVerseGenerationService(_llmClient, new(rhymeDictionary));                  // バース生成サービス
             _verseGenerationService = new MultipleLlmVerseGenerationService(_llmClient, new(rhymeDictionary));                  // バース生成サービス
             _scoreCalculator = new ScoreCalculator(new(new(), _llmClient, new(rhymeDictionary)), new(_llmClient, new(rhymeDictionary)));                  // 得点計算クラス
@@ -399,7 +402,31 @@ namespace RhAImers.Core
                         _inputRhymeCts = null;
                     }
                 }
-                var submittedRhymes = _rhymeInputController.Submit();                                   // 入力されたライムの取得
+                var rawSubmittedRhymes = _rhymeInputController.Submit();                                   // 入力されたライムの取得
+
+                // LLMを使って存在しない単語を排除
+                _uiManager.ShowGenerationLoading(); // フィルタリング中もローディングを表示
+                IReadOnlyList<string> submittedRhymes;
+                if (rawSubmittedRhymes != null && rawSubmittedRhymes.Count > 0)
+                {
+                    try
+                    {
+                        var filterPrompt = _promptBuilder.BuildWordFilteringPrompt(rawSubmittedRhymes);
+                        var filterResult = await _llmClient.Request(filterPrompt);
+                        submittedRhymes = ParseFilteredWords(filterResult, rawSubmittedRhymes);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogWarning($"[GameManager] Word filtering failed: {ex.Message}. Using original rhymes.");
+                        submittedRhymes = rawSubmittedRhymes;
+                    }
+                }
+                else
+                {
+                    submittedRhymes = rawSubmittedRhymes;
+                }
+                
+                Debug.Log($"[GameManager] Filtered Rhymes: {string.Join(", ", submittedRhymes)}");
 
                 // プレイヤーバースの生成
                 cts = new CancellationTokenSource();
@@ -439,6 +466,17 @@ namespace RhAImers.Core
 
             // ADD 2026/08/21 ota 得点の記録
             UpdateRanking(scores.Sum(score => score.Total));
+            // 審査員(LLM)によるフィードバックの取得とコンソール出力
+            try
+            {
+                var feedbackPrompt = _promptBuilder.BuildFeedbackPrompt(currentSession.Turns);
+                var feedbackResult = await _llmClient.Request(feedbackPrompt);
+                Debug.Log($"[GameManager] Judge Feedback:\n{feedbackResult}");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[GameManager] Feedback generation failed: {ex.Message}");
+            }
 
             //// 結果の表示
             //CurrentState = GameState.Result;
@@ -472,6 +510,32 @@ namespace RhAImers.Core
                     uIManager.UpdateInputTimer(remainingSec);                              // UIを更新
                 }
             }
+        }
+
+        private IReadOnlyList<string> ParseFilteredWords(string llmResult, IReadOnlyList<string> originalWords)
+        {
+            if (string.IsNullOrWhiteSpace(llmResult) || llmResult.Trim().ToLower() == "null")
+            {
+                return new List<string>();
+            }
+
+            var validWords = new List<string>();
+            var split = llmResult.Split(new[] { ',', '、', '・', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+            
+            foreach (var word in split)
+            {
+                var trimmed = word.Trim();
+                foreach (var orig in originalWords)
+                {
+                    if (string.Equals(orig, trimmed, StringComparison.OrdinalIgnoreCase) && !validWords.Contains(orig))
+                    {
+                        validWords.Add(orig);
+                        break;
+                    }
+                }
+            }
+
+            return validWords;
         }
 
         private async UniTask<Verse> GenerateWithFallbackAsync(Func<IVerseGenerationService, CancellationToken, UniTask<Verse>> generate, CancellationToken ct)

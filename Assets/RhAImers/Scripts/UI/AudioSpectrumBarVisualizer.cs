@@ -79,9 +79,8 @@ public sealed class AudioSpectrumBarVisualizer : MaskableGraphic
     }
 
 #if UNITY_EDITOR
-    protected override void OnValidate()
+    protected void OnValidate()
     {
-        base.OnValidate();
         raycastTarget = false;
         EnsureBuffers();
         SetVerticesDirty();
