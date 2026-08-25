@@ -404,36 +404,23 @@ namespace RhAImers.Core
                 }
                 var rawSubmittedRhymes = _rhymeInputController.Submit();                                   // 入力されたライムの取得
 
-                // LLMを使って存在しない単語を排除
-                _uiManager.ShowGenerationLoading(); // フィルタリング中もローディングを表示
-                IReadOnlyList<string> submittedRhymes;
+                // LLMを使って存在しない単語を排除（バース生成と並行して実行）
+                UniTask<IReadOnlyList<string>> filterTask;
                 if (rawSubmittedRhymes != null && rawSubmittedRhymes.Count > 0)
                 {
-                    try
-                    {
-                        var filterPrompt = _promptBuilder.BuildWordFilteringPrompt(rawSubmittedRhymes);
-                        var filterResult = await _llmClient.Request(filterPrompt);
-                        submittedRhymes = ParseFilteredWords(filterResult, rawSubmittedRhymes);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.LogWarning($"[GameManager] Word filtering failed: {ex.Message}. Using original rhymes.");
-                        submittedRhymes = rawSubmittedRhymes;
-                    }
+                    filterTask = FilterWordsAsync(rawSubmittedRhymes);
                 }
                 else
                 {
-                    submittedRhymes = rawSubmittedRhymes;
+                    filterTask = UniTask.FromResult(rawSubmittedRhymes);
                 }
-                
-                Debug.Log($"[GameManager] Filtered Rhymes: {string.Join(", ", submittedRhymes)}");
 
-                // プレイヤーバースの生成
+                // プレイヤーバースの生成（フィルタリングを待たずに rawSubmittedRhymes で開始）
                 cts = new CancellationTokenSource();
                 CurrentState = GameState.VerseGeneration;
                 _uiManager.ShowGenerationLoading();                                                     // プレイヤーバース生成中のUI表示
                 var playerVerse = await GenerateWithFallbackAsync(
-                    (service, token) => service.GeneratePlayerVerseAsync(submittedRhymes, opponentVerse.Text, token),
+                    (service, token) => service.GeneratePlayerVerseAsync(rawSubmittedRhymes, opponentVerse.Text, token),
                     cts.Token
                 );
 
@@ -447,6 +434,10 @@ namespace RhAImers.Core
                 await _rapperMotionController.CombatMotionAsync();
                 // 元のラップモーションに戻す
                 _rapperMotionController.StartRapMotion();
+
+                // フィルタリング結果を待機してからターンデータを作成
+                var submittedRhymes = await filterTask;
+                Debug.Log($"[GameManager] Filtered Rhymes: {string.Join(", ", submittedRhymes)}");
 
                 // ターンデータの追加
                 CurrentState = GameState.TurnEnd;
@@ -509,6 +500,21 @@ namespace RhAImers.Core
                     remainingSec = newRemainingSec;                                         // 残り時間を更新
                     uIManager.UpdateInputTimer(remainingSec);                              // UIを更新
                 }
+            }
+        }
+
+        private async UniTask<IReadOnlyList<string>> FilterWordsAsync(IReadOnlyList<string> rawWords)
+        {
+            try
+            {
+                var filterPrompt = _promptBuilder.BuildWordFilteringPrompt(rawWords);
+                var filterResult = await _llmClient.Request(filterPrompt);
+                return ParseFilteredWords(filterResult, rawWords);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[GameManager] Word filtering failed: {ex.Message}. Using original rhymes.");
+                return rawWords;
             }
         }
 
