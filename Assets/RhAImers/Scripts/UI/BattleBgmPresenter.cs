@@ -8,6 +8,7 @@ namespace RhAImers.UI
         [Header("References")]
         [SerializeField] private UIManager _uiManager;
         [SerializeField] private AudioSource _audioSource;
+        [SerializeField] private bool _autoFindUiManager = true;
 
         [Header("BGM")]
         [SerializeField] private AudioClip _battleBgmClip;
@@ -17,8 +18,10 @@ namespace RhAImers.UI
         [Header("Timing")]
         [SerializeField] private bool _playOnBattleStartSignal = true;
         [SerializeField] private bool _playOnSceneStart = false;
-        [SerializeField] private bool _restartOnRetry = true;
+        [SerializeField] private bool _restartOnRetry = false;
+        [SerializeField] private bool _stopOnScoringLoading = true;
         [SerializeField] private bool _stopOnBattleResult = true;
+        [SerializeField] private bool _stopOnResultSelected = true;
 
         [Header("Fade")]
         [SerializeField] private float _fadeInDuration = 0.75f;
@@ -28,6 +31,8 @@ namespace RhAImers.UI
 
         private void Awake()
         {
+            ResolveUiManager();
+
             if (_audioSource == null)
             {
                 _audioSource = GetComponent<AudioSource>();
@@ -54,12 +59,15 @@ namespace RhAImers.UI
 
         private void OnEnable()
         {
+            ResolveUiManager();
+
             if (_uiManager == null)
             {
                 return;
             }
 
             _uiManager.BattleStartSignalShown += HandleBattleStartSignalShown;
+            _uiManager.ScoringLoadingShown += HandleScoringLoadingShown;
             _uiManager.BattleResultShown += HandleBattleResultShown;
             _uiManager.ResultSelected += HandleResultSelected;
         }
@@ -69,11 +77,22 @@ namespace RhAImers.UI
             if (_uiManager != null)
             {
                 _uiManager.BattleStartSignalShown -= HandleBattleStartSignalShown;
+                _uiManager.ScoringLoadingShown -= HandleScoringLoadingShown;
                 _uiManager.BattleResultShown -= HandleBattleResultShown;
                 _uiManager.ResultSelected -= HandleResultSelected;
             }
 
             StopFadeCoroutine();
+        }
+
+        private void ResolveUiManager()
+        {
+            if (_uiManager != null || !_autoFindUiManager)
+            {
+                return;
+            }
+
+            _uiManager = FindFirstObjectByType<UIManager>();
         }
 
         public void PlayBgm(bool restart)
@@ -126,6 +145,16 @@ namespace RhAImers.UI
             PlayBgm(true);
         }
 
+        private void HandleScoringLoadingShown()
+        {
+            if (!_stopOnScoringLoading)
+            {
+                return;
+            }
+
+            StopBgm();
+        }
+
         private void HandleBattleResultShown()
         {
             if (!_stopOnBattleResult)
@@ -138,6 +167,12 @@ namespace RhAImers.UI
 
         private void HandleResultSelected()
         {
+            if (_stopOnResultSelected)
+            {
+                StopBgm();
+                return;
+            }
+
             if (!_restartOnRetry)
             {
                 return;

@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
@@ -107,11 +108,11 @@ namespace RhAImers.UI
 
         [Header("不正入力時の振動")]
         /// <summary>振動時間</summary>
-        [SerializeField, Min(0f)] private float _invalidInputVibrationDuration = 0.3f;
+        [SerializeField] private float _invalidInputVibrationDuration = 0.3f;
         /// <summary>左右への最大移動量</summary>
-        [SerializeField, Min(0f)] private float _invalidInputVibrationAmplitude = 12f;
+        [SerializeField] private float _invalidInputVibrationAmplitude = 12f;
         /// <summary>振動回数</summary>
-        [SerializeField, Min(1)] private int _invalidInputVibrationCount = 4;
+        [SerializeField] private int _invalidInputVibrationCount = 4;
 
         [Header("Rhyme Tab UI")]
         [SerializeField] private ScrollRect _inputRhymesScrollRect;
@@ -123,7 +124,7 @@ namespace RhAImers.UI
 
         [Header("Rhyme Tab Wrap Layout")]
         [SerializeField] private bool _wrapRhymeTabsIntoRows = true;
-        [SerializeField, Min(1)] private int _rhymeTabsPerRow = 3;
+        [SerializeField] private int _rhymeTabsPerRow = 3;
         [SerializeField] private float _rhymeTabHorizontalSpacing = 8f;
         [SerializeField] private bool _centerRhymeTabWordText = true;
         [SerializeField] private float _inputRhymesScrollSensitivity = 120f;
@@ -135,7 +136,7 @@ namespace RhAImers.UI
         [SerializeField] private float _rhymeTabTextHorizontalPadding = 44f;
         [SerializeField] private float _rhymeTabFallbackRowWidth = 420f;
         [SerializeField] private bool _shrinkRhymeTextWhenOverflow = true;
-        [SerializeField, Min(1)] private int _rhymeTabMinFontSize = 12;
+        [SerializeField] private int _rhymeTabMinFontSize = 12;
 
         [Header("Battle UI")]
         [SerializeField] private TMP_Text _opponentVerseText;
@@ -148,6 +149,17 @@ namespace RhAImers.UI
         [Header("Result UI")]
         [SerializeField] private GameObject _resultPanel;
         [SerializeField] private Button _resultButton;
+        [SerializeField] private CanvasGroup _resultPanelCanvasGroup;
+
+        [Header("Battle End Result Transition")]
+        [SerializeField] private ScoringLoadingOverlay _scoringLoadingOverlay;
+        [SerializeField] private bool _showExistingResultPanelWhileScoring = true;
+        [SerializeField] private bool _delayResultTransitionUntilScoringComplete = true;
+        [SerializeField] private bool _showScoringOverlayAfterResultButtonClicked = true;
+        [SerializeField] private bool _hideExistingResultPanelDuringScoringOverlay = true;
+        [SerializeField] private string _battleEndPendingMessage = "BATTLE END";
+        [SerializeField] private bool _replaceBattleEndMessageWithResultText = false;
+        [SerializeField] private float _minimumScoringOverlayVisibleSeconds = 0.75f;
 
         [Header("Verse Line Presentation")]
         [SerializeField] private bool _showVerseLineByLine = true;
@@ -166,6 +178,11 @@ namespace RhAImers.UI
         [Header("Player Verse Impact")]
         [SerializeField] private PlayerVerseImpactPresenter _playerVerseImpactPresenter;
 
+        [Header("Player Verse Generation Wait Effect")]
+        [SerializeField] private RhymeFusionGenerationWaitEffect _playerVerseGenerationWaitEffect;
+        [SerializeField] private bool _usePlayerVerseGenerationWaitEffect = true;
+        [SerializeField] private bool _hideBattlePanelsDuringPlayerVerseGenerationWait = true;
+
         [Header("Verse Line Objects")]
         [SerializeField] private RectTransform _opponentVerseLinesRoot;
         [SerializeField] private TMP_Text _opponentVerseLineTemplate;
@@ -181,6 +198,7 @@ namespace RhAImers.UI
         private readonly List<GameObject> _inputRhymeRowInstances = new();
         private readonly List<GameObject> _opponentVerseLineInstances = new();
         private readonly List<GameObject> _playerVerseLineInstances = new();
+        private readonly List<string> _latestInputRhymes = new();
 
         private BattlePhase _currentPhase = BattlePhase.Hidden;
         private bool _isBattleStartSignalPlaying;
@@ -194,6 +212,12 @@ namespace RhAImers.UI
         private float _activeVerseLineOriginalCanvasGroupAlpha;
         private bool _isVersePresentationGameTimePaused;
         private float _versePresentationPreviousTimeScale = 1f;
+        private bool _isWaitingForScoringResult;
+        private bool _isScoringResultReady;
+        private bool _resultTransitionRequestedWhileScoring;
+        private bool _resultPanelHiddenForScoringOverlay;
+        private float _scoringOverlayShownAt;
+        private Coroutine _delayedResultSelectedCoroutine;
 
         #region vibration関連
         private CancellationTokenSource _invalidInputVibrationCancellationTokenSource;
@@ -208,6 +232,7 @@ namespace RhAImers.UI
         public event Action<BattleUiPanelKind> BattlePanelShown;
         public event Action<BattleUiPanelKind> BattleVerseLineShown;
         public event Action PlayerVerseImpactOccurred;
+        public event Action ScoringLoadingShown;
         public event Action BattleResultShown;
 
         private void Awake()
@@ -224,6 +249,7 @@ namespace RhAImers.UI
 
             ApplyPhaseVisibility(BattlePhase.Hidden, animate: false);
             SetResultVisible(false);
+            HideScoringOverlayImmediate();
         }
 
         private void OnEnable()
@@ -243,6 +269,7 @@ namespace RhAImers.UI
 
             CancelBattleStartSignal();
             CancelVerseLinePresentation();
+            CancelDelayedResultSelected();
         }
 
         /// <summary>
@@ -252,6 +279,7 @@ namespace RhAImers.UI
         public async UniTask ShowBattleStartSignalAsync()
         {
             CancelBattleStartSignal();
+            ResetScoringResultTransitionState(hideOverlay: true);
             _battleStartSignalCts = new CancellationTokenSource();
             var ct = _battleStartSignalCts.Token;
 
@@ -319,6 +347,7 @@ namespace RhAImers.UI
 
         public void ShowTitle()
         {
+            ResetScoringResultTransitionState(hideOverlay: true);
             CancelVerseLinePresentation();
             SetStatus("Title");
             SetResultVisible(false);
@@ -326,6 +355,7 @@ namespace RhAImers.UI
 
         public void ShowModeSelect()
         {
+            ResetScoringResultTransitionState(hideOverlay: true);
             CancelVerseLinePresentation();
             SetStatus("Mode Select");
             SetResultVisible(false);
@@ -333,6 +363,8 @@ namespace RhAImers.UI
 
         public UniTask ShowOpponentVerseAsync(Verse verse)
         {
+            ResetScoringResultTransitionState(hideOverlay: true);
+            StopPlayerVerseGenerationWaitEffectImmediate();
             ShowOpponentVersePhase();
             SetStatus("Opponent Verse");
             SetResultVisible(false);
@@ -342,6 +374,8 @@ namespace RhAImers.UI
 
         public void ShowInputTimer(int sec)
         {
+            ResetScoringResultTransitionState(hideOverlay: true);
+            StopPlayerVerseGenerationWaitEffectImmediate();
             ShowInputPhase();
             UpdateInputTimer(sec);
         }
@@ -353,6 +387,9 @@ namespace RhAImers.UI
 
         public void ShowInputRhymes(IReadOnlyList<string> rhymes)
         {
+            ResetScoringResultTransitionState(hideOverlay: true);
+            StopPlayerVerseGenerationWaitEffectImmediate();
+            CaptureLatestInputRhymes(rhymes);
             ShowInputPhase();
             UpdateInputRhymesTextFallback(rhymes);
             RebuildInputRhymeTabs(rhymes);
@@ -360,6 +397,9 @@ namespace RhAImers.UI
 
         public async UniTask ShowGeneratedVerseAsync(Verse verse)
         {
+            ResetScoringResultTransitionState(hideOverlay: true);
+            await FinishPlayerVerseGenerationWaitEffectAsync();
+
             if (_playerVerseImpactPresenter != null)
             {
                 _playerVerseImpactPresenter.PrepareForShow();
@@ -394,19 +434,48 @@ namespace RhAImers.UI
 
         public void ShowResult(BattleResult result)
         {
+            StopPlayerVerseGenerationWaitEffectImmediate();
             CancelVerseLinePresentation();
             HideAllVerseLineObjectPresentations();
             HideBattlePhaseGroups();
             SetStatus("Result");
             SetResultVisible(true);
+
+            if (_resultTransitionRequestedWhileScoring && _delayResultTransitionUntilScoringComplete)
+            {
+                HideExistingResultPanelForScoringOverlay();
+                BringScoringOverlayToFront();
+            }
+            else
+            {
+                SetResultPanelTransitionAlpha(1f);
+            }
+
             BattleResultShown?.Invoke();
 
             string resultText = BuildResultText(result);
-            SetText(_resultText, resultText);
+            _isScoringResultReady = true;
+
+            if (_replaceBattleEndMessageWithResultText || !_isWaitingForScoringResult)
+            {
+                SetText(_resultText, resultText);
+            }
+
+            if (_resultTransitionRequestedWhileScoring && _delayResultTransitionUntilScoringComplete)
+            {
+                if (_resultButton != null)
+                {
+                    _resultButton.interactable = false;
+                }
+
+                BeginDelayedResultSelected();
+            }
         }
 
         public void ShowOpponentVerseLoading()
         {
+            ResetScoringResultTransitionState(hideOverlay: true);
+            StopPlayerVerseGenerationWaitEffectImmediate();
             CancelVerseLinePresentation();
             SetVerseLineObjectPresentationVisible(BattleUiPanelKind.OpponentVerse, false);
             SetVerseFallbackTextVisible(_opponentVerseText, true);
@@ -418,21 +487,59 @@ namespace RhAImers.UI
 
         public void ShowGenerationLoading()
         {
+            ResetScoringResultTransitionState(hideOverlay: true);
             CancelVerseLinePresentation();
             SetVerseLineObjectPresentationVisible(BattleUiPanelKind.PlayerVerse, false);
             SetVerseFallbackTextVisible(_generatedVerseText, true);
-            ShowPlayerVersePhase();
             SetStatus("Verse Generation Loading");
             SetResultVisible(false);
+
+            if (ShouldUsePlayerVerseGenerationWaitEffect())
+            {
+                SetText(_generatedVerseText, string.Empty);
+
+                if (_hideBattlePanelsDuringPlayerVerseGenerationWait)
+                {
+                    ApplyPhaseVisibility(BattlePhase.Hidden, animate: true);
+                }
+                else
+                {
+                    ShowPlayerVersePhase();
+                }
+
+                BeginPlayerVerseGenerationWaitEffect();
+                return;
+            }
+
+            ShowPlayerVersePhase();
             SetText(_generatedVerseText, "あなたのバース生成中...");
         }
 
         public void ShowScoringLoading()
         {
+            CancelDelayedResultSelected();
+            _isWaitingForScoringResult = true;
+            _isScoringResultReady = false;
+            _resultTransitionRequestedWhileScoring = false;
+            _resultPanelHiddenForScoringOverlay = false;
+            _scoringOverlayShownAt = 0f;
+            SetResultPanelTransitionAlpha(1f);
+            HideScoringOverlayImmediate();
+
+            StopPlayerVerseGenerationWaitEffectImmediate();
             CancelVerseLinePresentation();
             HideAllVerseLineObjectPresentations();
             HideBattlePhaseGroups();
             SetStatus("Scoring Loading");
+            ScoringLoadingShown?.Invoke();
+
+            if (_showExistingResultPanelWhileScoring)
+            {
+                SetResultVisible(true);
+                SetText(_resultText, _battleEndPendingMessage);
+                return;
+            }
+
             SetResultVisible(false);
             SetText(_resultText, "採点中...");
         }
@@ -1611,7 +1718,189 @@ namespace RhAImers.UI
 
         private void HandleRetryButtonClicked()
         {
+            if (_isWaitingForScoringResult && _delayResultTransitionUntilScoringComplete)
+            {
+                _resultTransitionRequestedWhileScoring = true;
+
+                if (_resultButton != null)
+                {
+                    _resultButton.interactable = false;
+                }
+
+                if (_showScoringOverlayAfterResultButtonClicked)
+                {
+                    ShowScoringOverlayManual();
+                }
+
+                if (_isScoringResultReady)
+                {
+                    BeginDelayedResultSelected();
+                }
+
+                return;
+            }
+
             ResultSelected?.Invoke();
+        }
+
+        private void ShowScoringOverlayManual()
+        {
+            ResolveScoringLoadingOverlay();
+
+            if (_scoringLoadingOverlay == null)
+            {
+                return;
+            }
+
+            _scoringOverlayShownAt = Time.unscaledTime;
+            HideExistingResultPanelForScoringOverlay();
+            _scoringLoadingOverlay.Show();
+            BringScoringOverlayToFront();
+        }
+
+        private void HideScoringOverlayImmediate()
+        {
+            ResolveScoringLoadingOverlay();
+
+            if (_scoringLoadingOverlay == null)
+            {
+                return;
+            }
+
+            _scoringLoadingOverlay.HideImmediate();
+        }
+
+        private void BringScoringOverlayToFront()
+        {
+            ResolveScoringLoadingOverlay();
+
+            if (_scoringLoadingOverlay != null)
+            {
+                _scoringLoadingOverlay.transform.SetAsLastSibling();
+            }
+        }
+
+        private void HideExistingResultPanelForScoringOverlay()
+        {
+            if (!_hideExistingResultPanelDuringScoringOverlay)
+            {
+                return;
+            }
+
+            if (_resultPanel == null)
+            {
+                return;
+            }
+
+            _resultPanelHiddenForScoringOverlay = true;
+            SetResultPanelTransitionAlpha(0f);
+
+            if (_resultButton != null)
+            {
+                _resultButton.interactable = false;
+            }
+        }
+
+        private void SetResultPanelTransitionAlpha(float alpha)
+        {
+            ResolveResultPanelCanvasGroup();
+
+            if (_resultPanelCanvasGroup == null)
+            {
+                return;
+            }
+
+            float clampedAlpha = Mathf.Clamp01(alpha);
+            _resultPanelCanvasGroup.alpha = clampedAlpha;
+            _resultPanelCanvasGroup.interactable = clampedAlpha > 0.001f;
+            _resultPanelCanvasGroup.blocksRaycasts = clampedAlpha > 0.001f;
+        }
+
+        private void ResolveResultPanelCanvasGroup()
+        {
+            if (_resultPanelCanvasGroup != null)
+            {
+                return;
+            }
+
+            if (_resultPanel == null)
+            {
+                return;
+            }
+
+            _resultPanelCanvasGroup = _resultPanel.GetComponent<CanvasGroup>();
+
+            if (_resultPanelCanvasGroup == null)
+            {
+                _resultPanelCanvasGroup = _resultPanel.AddComponent<CanvasGroup>();
+            }
+        }
+
+        private void ResolveScoringLoadingOverlay()
+        {
+            if (_scoringLoadingOverlay != null)
+            {
+                return;
+            }
+
+            _scoringLoadingOverlay = FindFirstObjectByType<ScoringLoadingOverlay>();
+        }
+
+        private void BeginDelayedResultSelected()
+        {
+            if (_delayedResultSelectedCoroutine != null)
+            {
+                return;
+            }
+
+            _delayedResultSelectedCoroutine = StartCoroutine(DelayedResultSelectedRoutine());
+        }
+
+        private IEnumerator DelayedResultSelectedRoutine()
+        {
+            float shownAt = _scoringOverlayShownAt > 0f ? _scoringOverlayShownAt : Time.unscaledTime;
+            float elapsed = Time.unscaledTime - shownAt;
+            float remaining = Mathf.Max(0f, _minimumScoringOverlayVisibleSeconds - elapsed);
+
+            while (remaining > 0f)
+            {
+                remaining -= Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            _isWaitingForScoringResult = false;
+            _isScoringResultReady = false;
+            _resultTransitionRequestedWhileScoring = false;
+            _delayedResultSelectedCoroutine = null;
+
+            ResultSelected?.Invoke();
+        }
+
+        private void CancelDelayedResultSelected()
+        {
+            if (_delayedResultSelectedCoroutine == null)
+            {
+                return;
+            }
+
+            StopCoroutine(_delayedResultSelectedCoroutine);
+            _delayedResultSelectedCoroutine = null;
+        }
+
+        private void ResetScoringResultTransitionState(bool hideOverlay)
+        {
+            CancelDelayedResultSelected();
+            _isWaitingForScoringResult = false;
+            _isScoringResultReady = false;
+            _resultTransitionRequestedWhileScoring = false;
+            _resultPanelHiddenForScoringOverlay = false;
+            _scoringOverlayShownAt = 0f;
+            SetResultPanelTransitionAlpha(1f);
+
+            if (hideOverlay)
+            {
+                HideScoringOverlayImmediate();
+            }
         }
 
         /// <summary>
@@ -1623,6 +1912,65 @@ namespace RhAImers.UI
             SetText(_inputTimerText, string.Empty);  // "00:00"ではなく非表示相当の空文字に
             UpdateInputRhymesTextFallback(null);
             RebuildInputRhymeTabs(null);
+        }
+
+        private void CaptureLatestInputRhymes(IReadOnlyList<string> rhymes)
+        {
+            _latestInputRhymes.Clear();
+
+            if (rhymes == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < rhymes.Count; i++)
+            {
+                string rhyme = rhymes[i];
+
+                if (string.IsNullOrWhiteSpace(rhyme))
+                {
+                    continue;
+                }
+
+                _latestInputRhymes.Add(rhyme);
+            }
+        }
+
+        private bool ShouldUsePlayerVerseGenerationWaitEffect()
+        {
+            return _usePlayerVerseGenerationWaitEffect
+                && _playerVerseGenerationWaitEffect != null;
+        }
+
+        private void BeginPlayerVerseGenerationWaitEffect()
+        {
+            if (!ShouldUsePlayerVerseGenerationWaitEffect())
+            {
+                return;
+            }
+
+            _playerVerseGenerationWaitEffect.Begin(_latestInputRhymes, destroyCancellationToken);
+        }
+
+        private async UniTask FinishPlayerVerseGenerationWaitEffectAsync()
+        {
+            if (!ShouldUsePlayerVerseGenerationWaitEffect())
+            {
+                return;
+            }
+
+            await _playerVerseGenerationWaitEffect.WaitUntilReadyToShowVerseAsync(destroyCancellationToken);
+            await _playerVerseGenerationWaitEffect.HideAsync(destroyCancellationToken);
+        }
+
+        private void StopPlayerVerseGenerationWaitEffectImmediate()
+        {
+            if (_playerVerseGenerationWaitEffect == null)
+            {
+                return;
+            }
+
+            _playerVerseGenerationWaitEffect.StopImmediate();
         }
 
         private void ApplyBattleBackground()
@@ -1792,9 +2140,11 @@ namespace RhAImers.UI
             var builder = new StringBuilder();
             builder.AppendLine("入力済みライム：");
 
-            for (int i = 0; i < rhymes.Count; i++)
+            int displayNumber = 1;
+            for (int i = rhymes.Count - 1; i >= 0; i--)
             {
-                builder.AppendLine($"{i + 1}. {rhymes[i]}");
+                builder.AppendLine($"{displayNumber}. {rhymes[i]}");
+                displayNumber++;
             }
 
             _inputRhymesText.text = builder.ToString();
@@ -1828,10 +2178,10 @@ namespace RhAImers.UI
             int rowIndex = 0;
             int tabsPerRowFallback = Mathf.Max(1, _rhymeTabsPerRow);
 
-            for (int i = 0; i < rhymes.Count; i++)
+            for (int displayIndex = 0; displayIndex < rhymes.Count; displayIndex++)
             {
-                int rhymeIndex = i;
-                string rhymeWord = rhymes[i];
+                int rhymeIndex = rhymes.Count - 1 - displayIndex;
+                string rhymeWord = rhymes[rhymeIndex];
                 float tabWidth = GetRhymeTabPreferredWidth(rhymeWord, rowAvailableWidth);
 
                 Transform parentTransform = _inputRhymesContent;
@@ -1868,7 +2218,7 @@ namespace RhAImers.UI
                 }
 
                 GameObject tab = Instantiate(_inputRhymeTabTemplate, parentTransform);
-                tab.name = $"InputRhymeTab_{i + 1}";
+                tab.name = $"InputRhymeTab_{displayIndex + 1}";
                 tab.transform.localScale = Vector3.one;
                 PrepareInputRhymeTabLayout(tab, tabWidth);
                 tab.SetActive(true);
@@ -2297,6 +2647,11 @@ namespace RhAImers.UI
                 if (visible)
                 {
                     _resultPanel.transform.SetAsLastSibling();
+
+                    if (!_resultPanelHiddenForScoringOverlay)
+                    {
+                        SetResultPanelTransitionAlpha(1f);
+                    }
                 }
             }
 
