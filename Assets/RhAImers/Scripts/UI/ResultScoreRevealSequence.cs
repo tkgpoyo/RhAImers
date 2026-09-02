@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace RhAImers.UI
@@ -29,6 +30,7 @@ namespace RhAImers.UI
         [SerializeField] private bool _hideButtonUntilEnd = true;
         [SerializeField] private CanvasGroup _buttonCanvasGroup;
         [SerializeField] private Selectable _buttonSelectable;
+        [SerializeField] private ResultRevealButtonTarget[] _additionalButtons;
         [SerializeField] private float _buttonRevealDuration = 0.25f;
 
         [Header("Timing")]
@@ -85,9 +87,8 @@ namespace RhAImers.UI
 
         private readonly Dictionary<TextMeshProUGUI, TextVisualState> _textStates = new Dictionary<TextMeshProUGUI, TextVisualState>();
         private readonly Dictionary<Graphic, Color> _graphicColors = new Dictionary<Graphic, Color>();
+        private readonly Dictionary<CanvasGroup, Vector3> _buttonBaseScales = new Dictionary<CanvasGroup, Vector3>();
         private Coroutine _sequenceCoroutine;
-        private Vector3 _buttonBaseScale = Vector3.one;
-        private bool _hasButtonBaseScale;
 
         private void Awake()
         {
@@ -164,7 +165,7 @@ namespace RhAImers.UI
                 yield return RevealStampRoutine(turn.AverageHardnessText, _itemStampDuration, _itemStartScale, _itemFlashColor, _itemStampClip, _itemVolume, false, 0f);
                 yield return Wait(_betweenItemDelay);
 
-                yield return RevealStampRoutine(turn.RelevanceCountText, _itemStampDuration, _itemStartScale, _itemFlashColor, _itemStampClip, _itemVolume, false, 0f);
+                yield return RevealStampRoutine(turn.AverageLengthText, _itemStampDuration, _itemStartScale, _itemFlashColor, _itemStampClip, _itemVolume, false, 0f);
                 yield return Wait(_betweenItemDelay);
 
                 yield return RevealStampRoutine(turn.TotalText, _turnTotalStampDuration, _turnTotalStartScale, _turnTotalFlashColor, _turnTotalStampClip, _turnTotalVolume, _countUpTurnTotals, _turnTotalCountDuration);
@@ -301,18 +302,18 @@ namespace RhAImers.UI
 
         private IEnumerator RevealButtonRoutine()
         {
-            if (_buttonCanvasGroup == null)
+            if (!HasAnyButtonTarget())
             {
                 yield break;
             }
 
             if (_buttonRevealDuration <= 0f)
             {
-                SetButtonVisible(true);
+                SetButtonsVisible(true);
                 yield break;
             }
 
-            SetButtonInput(false);
+            SetButtonsInput(false);
 
             float elapsed = 0f;
 
@@ -322,18 +323,26 @@ namespace RhAImers.UI
                 float t = Clamp01(elapsed / _buttonRevealDuration);
                 float eased = EaseOutCubic(t);
 
-                _buttonCanvasGroup.alpha = eased;
-
-                if (_buttonCanvasGroup.transform is RectTransform rectTransform)
+                foreach (RevealButtonRuntimeTarget target in EnumerateButtonTargets())
                 {
-                    float scale = CalculateStampScale(1.18f, 0.98f, t);
-                    rectTransform.localScale = _buttonBaseScale * scale;
+                    if (target.CanvasGroup == null)
+                    {
+                        continue;
+                    }
+
+                    target.CanvasGroup.alpha = eased;
+
+                    if (target.CanvasGroup.transform is RectTransform rectTransform)
+                    {
+                        float scale = CalculateStampScale(1.18f, 0.98f, t);
+                        rectTransform.localScale = GetButtonBaseScale(target.CanvasGroup) * scale;
+                    }
                 }
 
                 yield return null;
             }
 
-            SetButtonVisible(true);
+            SetButtonsVisible(true);
         }
 
         private void ResolveReferences()
@@ -352,19 +361,14 @@ namespace RhAImers.UI
             _audioSource.loop = false;
             _audioSource.spatialBlend = 0f;
 
-            if (_buttonCanvasGroup == null && _buttonSelectable != null)
-            {
-                _buttonCanvasGroup = _buttonSelectable.GetComponent<CanvasGroup>();
-            }
+            ResolveButtonTarget(ref _buttonCanvasGroup, ref _buttonSelectable);
 
-            if (_buttonCanvasGroup == null && _buttonSelectable != null)
+            if (_additionalButtons != null)
             {
-                _buttonCanvasGroup = _buttonSelectable.gameObject.AddComponent<CanvasGroup>();
-            }
-
-            if (_buttonSelectable == null && _buttonCanvasGroup != null)
-            {
-                _buttonSelectable = _buttonCanvasGroup.GetComponent<Selectable>();
+                for (int i = 0; i < _additionalButtons.Length; i++)
+                {
+                    ResolveAdditionalButtonTarget(_additionalButtons[i]);
+                }
             }
 
             if (_sceneBgmPlayerToPlay == null && _autoFindSceneBgmPlayerToPlay)
@@ -404,10 +408,12 @@ namespace RhAImers.UI
                 }
             }
 
-            if (_buttonCanvasGroup != null && !_hasButtonBaseScale)
+            foreach (RevealButtonRuntimeTarget target in EnumerateButtonTargets())
             {
-                _buttonBaseScale = _buttonCanvasGroup.transform.localScale;
-                _hasButtonBaseScale = true;
+                if (target.CanvasGroup != null && !_buttonBaseScales.ContainsKey(target.CanvasGroup))
+                {
+                    _buttonBaseScales.Add(target.CanvasGroup, target.CanvasGroup.transform.localScale);
+                }
             }
         }
 
@@ -442,7 +448,7 @@ namespace RhAImers.UI
 
             if (_hideButtonUntilEnd)
             {
-                SetButtonVisible(false);
+                SetButtonsVisible(false);
             }
         }
 
@@ -467,9 +473,12 @@ namespace RhAImers.UI
                 }
             }
 
-            if (_buttonCanvasGroup != null && _hasButtonBaseScale)
+            foreach (KeyValuePair<CanvasGroup, Vector3> pair in _buttonBaseScales)
             {
-                _buttonCanvasGroup.transform.localScale = _buttonBaseScale;
+                if (pair.Key != null)
+                {
+                    pair.Key.transform.localScale = pair.Value;
+                }
             }
         }
 
@@ -488,7 +497,7 @@ namespace RhAImers.UI
 
                     yield return turn.RhymeCountText;
                     yield return turn.AverageHardnessText;
-                    yield return turn.RelevanceCountText;
+                    yield return turn.AverageLengthText;
                     yield return turn.TotalText;
                 }
             }
@@ -516,32 +525,121 @@ namespace RhAImers.UI
             return graphic != null ? graphic.color : Color.white;
         }
 
-        private void SetButtonVisible(bool visible)
+        private void SetButtonsVisible(bool visible)
         {
-            if (_buttonCanvasGroup != null)
+            foreach (RevealButtonRuntimeTarget target in EnumerateButtonTargets())
             {
-                _buttonCanvasGroup.alpha = visible ? 1f : 0f;
-            }
+                if (target.CanvasGroup != null)
+                {
+                    target.CanvasGroup.alpha = visible ? 1f : 0f;
+                    target.CanvasGroup.transform.localScale = GetButtonBaseScale(target.CanvasGroup);
+                }
 
-            if (_buttonCanvasGroup != null && _hasButtonBaseScale)
-            {
-                _buttonCanvasGroup.transform.localScale = _buttonBaseScale;
+                SetButtonTargetInput(target, visible);
             }
-
-            SetButtonInput(visible);
         }
 
-        private void SetButtonInput(bool enabled)
+        private void SetButtonsInput(bool enabled)
         {
-            if (_buttonCanvasGroup != null)
+            foreach (RevealButtonRuntimeTarget target in EnumerateButtonTargets())
             {
-                _buttonCanvasGroup.interactable = enabled;
-                _buttonCanvasGroup.blocksRaycasts = enabled;
+                SetButtonTargetInput(target, enabled);
+            }
+        }
+
+        private static void SetButtonTargetInput(RevealButtonRuntimeTarget target, bool enabled)
+        {
+            if (target.CanvasGroup != null)
+            {
+                target.CanvasGroup.interactable = enabled;
+                target.CanvasGroup.blocksRaycasts = enabled;
             }
 
-            if (_buttonSelectable != null)
+            if (target.Selectable != null)
             {
-                _buttonSelectable.interactable = enabled;
+                target.Selectable.interactable = enabled;
+            }
+        }
+
+        private bool HasAnyButtonTarget()
+        {
+            foreach (RevealButtonRuntimeTarget target in EnumerateButtonTargets())
+            {
+                if (target.CanvasGroup != null || target.Selectable != null)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private IEnumerable<RevealButtonRuntimeTarget> EnumerateButtonTargets()
+        {
+            if (_buttonCanvasGroup != null || _buttonSelectable != null)
+            {
+                yield return new RevealButtonRuntimeTarget(_buttonCanvasGroup, _buttonSelectable);
+            }
+
+            if (_additionalButtons == null)
+            {
+                yield break;
+            }
+
+            for (int i = 0; i < _additionalButtons.Length; i++)
+            {
+                ResultRevealButtonTarget target = _additionalButtons[i];
+                if (target == null)
+                {
+                    continue;
+                }
+
+                if (target.CanvasGroup != null || target.Selectable != null)
+                {
+                    yield return new RevealButtonRuntimeTarget(target.CanvasGroup, target.Selectable);
+                }
+            }
+        }
+
+        private Vector3 GetButtonBaseScale(CanvasGroup canvasGroup)
+        {
+            if (canvasGroup != null && _buttonBaseScales.TryGetValue(canvasGroup, out Vector3 scale))
+            {
+                return scale;
+            }
+
+            return canvasGroup != null ? canvasGroup.transform.localScale : Vector3.one;
+        }
+
+        private void ResolveAdditionalButtonTarget(ResultRevealButtonTarget target)
+        {
+            if (target == null)
+            {
+                return;
+            }
+
+            CanvasGroup canvasGroup = target.CanvasGroup;
+            Selectable selectable = target.Selectable;
+            ResolveButtonTarget(ref canvasGroup, ref selectable);
+            target.CanvasGroup = canvasGroup;
+            target.Selectable = selectable;
+        }
+
+        private static void ResolveButtonTarget(ref CanvasGroup canvasGroup, ref Selectable selectable)
+        {
+            if (canvasGroup == null && selectable != null)
+            {
+                canvasGroup = selectable.GetComponent<CanvasGroup>();
+            }
+
+            if (canvasGroup == null && selectable != null)
+            {
+                canvasGroup = selectable.gameObject.AddComponent<CanvasGroup>();
+            }
+
+            if (selectable == null && canvasGroup != null)
+            {
+                selectable = canvasGroup.GetComponent<Selectable>();
             }
         }
 
@@ -773,7 +871,27 @@ namespace RhAImers.UI
         public Graphic PanelGraphic;
         public TextMeshProUGUI RhymeCountText;
         public TextMeshProUGUI AverageHardnessText;
-        public TextMeshProUGUI RelevanceCountText;
+        [FormerlySerializedAs("RelevanceCountText")]
+        public TextMeshProUGUI AverageLengthText;
         public TextMeshProUGUI TotalText;
+    }
+
+    [Serializable]
+    public sealed class ResultRevealButtonTarget
+    {
+        public CanvasGroup CanvasGroup;
+        public Selectable Selectable;
+    }
+
+    internal struct RevealButtonRuntimeTarget
+    {
+        public RevealButtonRuntimeTarget(CanvasGroup canvasGroup, Selectable selectable)
+        {
+            CanvasGroup = canvasGroup;
+            Selectable = selectable;
+        }
+
+        public CanvasGroup CanvasGroup { get; }
+        public Selectable Selectable { get; }
     }
 }

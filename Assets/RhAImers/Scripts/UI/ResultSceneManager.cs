@@ -1,8 +1,8 @@
 using System;
-using System.Text;
 using TMPro;
 using RhAImers.Core;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace RhAImers.UI
@@ -12,14 +12,15 @@ namespace RhAImers.UI
     {
         public TextMeshProUGUI RhymeCountText;
         public TextMeshProUGUI AverageHardnessText;
-        public TextMeshProUGUI RelevanceCountText;
+        [FormerlySerializedAs("RelevanceCountText")]
+        public TextMeshProUGUI AverageLengthText;
         public TextMeshProUGUI TotalText;
 
         public void SetData(RhAImers.Scoring.TurnScore score)
         {
             if (RhymeCountText != null) RhymeCountText.text = $"{score.RhymeCount}";
             if (AverageHardnessText != null) AverageHardnessText.text = $"{score.AverageHardness:F2}";
-            if (RelevanceCountText != null) RelevanceCountText.text = $"{score.RelevanceCount}";
+            if (AverageLengthText != null) AverageLengthText.text = $"{score.AverageLength:F1}";
             if (TotalText != null) TotalText.text = $"{score.Total}";
         }
     }
@@ -44,20 +45,13 @@ namespace RhAImers.UI
 
             if (result == null)
             {
-                // テスト用のモックデータを使用
                 var dummyTurnScores = new System.Collections.Generic.List<RhAImers.Scoring.TurnScore>
                 {
-                    //new RhAImers.Scoring.TurnScore(5, 0.72f, 4),
-                    //new RhAImers.Scoring.TurnScore(4, 0.70f, 3),
-                    //new RhAImers.Scoring.TurnScore(6, 0.60f, 4)
-
-                    // ADD 2026/08/21 ota ライムの平均長さを引数に追加
                     new RhAImers.Scoring.TurnScore(5, 0.72f, 4, 3.0f),
                     new RhAImers.Scoring.TurnScore(4, 0.70f, 3, 3.0f),
                     new RhAImers.Scoring.TurnScore(6, 0.60f, 4, 3.0f)
                 };
 
-                // BattleResultの生成 (TurnDataはテスト用のため空リストを渡す)
                 var dummyTurns = new System.Collections.Generic.List<RhAImers.Battle.TurnData>();
                 result = new RhAImers.Battle.BattleResult(dummyTurns, dummyTurnScores);
             }
