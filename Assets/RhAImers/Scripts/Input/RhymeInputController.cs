@@ -36,6 +36,7 @@ namespace RhAImers.Input
 
         private int _lastAddedFrame = -1;
         private string _lastAddedWord = string.Empty;
+        private string _theme = string.Empty;
 
         public event Action SubmitRequested;
         public event Action<IReadOnlyList<string>> Submitted;
@@ -153,7 +154,7 @@ namespace RhAImers.Input
             _notifySubmitRequested = notify;
         }
 
-        public void StartInput()
+        public void StartInput(string theme)
         {
             StopRefocusCoroutine();
 
@@ -162,7 +163,9 @@ namespace RhAImers.Input
             _lastAddedFrame = -1;
             _lastAddedWord = string.Empty;
 
-            _uiManager?.ShowInputRhymes(_rhymes);
+            _theme = theme;
+
+            _uiManager?.ShowInputRhymes(_theme, _rhymes);
 
             if (_rhymeInputField != null)
             {
@@ -198,7 +201,7 @@ namespace RhAImers.Input
                 return;
             }
 
-            _uiManager?.ShowInputRhymes(_rhymes);
+            _uiManager?.ShowInputRhymes(_theme, _rhymes);
             RhymeRemoved?.Invoke(trimmedWord);
 
             if (_refocusInputAfterAdd)
@@ -216,7 +219,7 @@ namespace RhAImers.Input
 
             string removedWord = _rhymes[index];
             _rhymes.RemoveAt(index);
-            _uiManager?.ShowInputRhymes(_rhymes);
+            _uiManager?.ShowInputRhymes(_theme, _rhymes);
             RhymeRemoved?.Invoke(removedWord);
 
             if (_refocusInputAfterAdd)
@@ -345,7 +348,7 @@ namespace RhAImers.Input
                 Debug.Log($"Rhyme added: {trimmedWord}. Count={_rhymes.Count}");
             }
 
-            _uiManager?.ShowInputRhymes(_rhymes);
+            _uiManager?.ShowInputRhymes(_theme, _rhymes);
             RhymeAdded?.Invoke(trimmedWord);
 
             ClearInputField();

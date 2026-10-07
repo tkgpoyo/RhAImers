@@ -663,6 +663,8 @@ MonoBehaviour:
   _invalidInputVibrationDuration: 0.3
   _invalidInputVibrationAmplitude: 12
   _invalidInputVibrationCount: 4
+  _rhymeSelectionPrefab: {fileID: 7430586532890248323, guid: da3738660a12744c5bdd379a88dd28c4, type: 3}
+  _rhymeSelectionPanel: {fileID: 596435303}
   _inputRhymesScrollRect: {fileID: 1710011508}
   _inputRhymesContent: {fileID: 295545655}
   _inputRhymeTabTemplate: {fileID: 551594204}
@@ -689,10 +691,12 @@ MonoBehaviour:
   _statusText: {fileID: 0}
   _resultPanel: {fileID: 53000781}
   _resultButton: {fileID: 973395422}
+  _resultPanelCanvasGroup: {fileID: 0}
   _scoringLoadingOverlay: {fileID: 0}
   _showExistingResultPanelWhileScoring: 1
   _delayResultTransitionUntilScoringComplete: 1
   _showScoringOverlayAfterResultButtonClicked: 1
+  _hideExistingResultPanelDuringScoringOverlay: 1
   _battleEndPendingMessage: BATTLE END
   _replaceBattleEndMessageWithResultText: 0
   _minimumScoringOverlayVisibleSeconds: 0.75
@@ -1758,6 +1762,7 @@ RectTransform:
   - {fileID: 53000782}
   - {fileID: 1166082912}
   - {fileID: 2060730690}
+  - {fileID: 596435304}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -1902,6 +1907,41 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!1 &596435303
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 596435304}
+  m_Layer: 5
+  m_Name: RhymeSelectPanel
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &596435304
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 596435303}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 557870924}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.1, y: 0.5}
+  m_AnchorMax: {x: 0.9, y: 0.9}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &597103210
 GameObject:
   m_ObjectHideFlags: 0
@@ -1954,13 +1994,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: RhAImers::RhAImers.UI.BattleBgmPresenter
   _uiManager: {fileID: 261815018}
   _audioSource: {fileID: 597103213}
+  _autoFindUiManager: 1
   _battleBgmClip: {fileID: 8300000, guid: ac32053e797ce7245a820f70f99dce9a, type: 3}
   _volume: 0.45
   _loop: 1
   _playOnBattleStartSignal: 1
   _playOnSceneStart: 0
   _restartOnRetry: 1
+  _stopOnScoringLoading: 1
   _stopOnBattleResult: 1
+  _stopOnResultSelected: 1
   _fadeInDuration: 0.75
   _fadeOutDuration: 0.75
 --- !u!82 &597103213
@@ -5769,7 +5812,7 @@ RectTransform:
   m_GameObject: {fileID: 2060730689}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 1.1, y: 1.1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1842069865}

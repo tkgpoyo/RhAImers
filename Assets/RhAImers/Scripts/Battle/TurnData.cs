@@ -15,11 +15,14 @@ namespace RhAImers.Battle
         public IReadOnlyList<string> InputRhymes { get; }
         /// <summary>プレイヤーのバース</summary>
         public Verse GeneratedPlayerVerse { get; }
+        /// <summary>韻のテーマとなる単語</summary>
+        public string ThemeWord { get; }
 
-        public TurnData(int turnIndex, Verse opponentVerse, IReadOnlyList<string> inputRhymes, Verse generatedPlayerVerse)
+        public TurnData(int turnIndex, Verse opponentVerse, string themeWord, IReadOnlyList<string> inputRhymes, Verse generatedPlayerVerse)
         {
             TurnIndex = turnIndex;
             OpponentVerse = opponentVerse;
+            ThemeWord = themeWord;
             InputRhymes = inputRhymes;
             GeneratedPlayerVerse = generatedPlayerVerse;
         }

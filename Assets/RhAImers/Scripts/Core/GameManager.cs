@@ -383,12 +383,21 @@ namespace RhAImers.Core
 
                 await _uiManager.ShowOpponentVerseAsync(opponentVerse);                                            // 相手バースの表示
 
+                // ライム選択
+                cts = new CancellationTokenSource();
+                var rhymeSelector = new RhymeSelector();
+                var themes = rhymeSelector.SelectRandomRhyme(3);
+                var selectedTheme = await _uiManager.ShowRhymeSelect(10, themes, cts.Token);
+                // TODO: 雑な Dispose処理
+                cts.Dispose();
+                cts = null;
+
                 // ライム入力
                 cts = new CancellationTokenSource();
                 _inputRhymeCts = cts;
                 CurrentState = GameState.RhymeInput;
                 try {
-                    _rhymeInputController.StartInput();                                                 // ライム入力の開始
+                    _rhymeInputController.StartInput(selectedTheme);                                    // ライム入力の開始
                     await InputTimer(settings.InputTimeLimitSec, _uiManager, _inputRhymeCts.Token);     // 入力タイマー
                 }
                 catch {
@@ -442,6 +451,7 @@ namespace RhAImers.Core
                 var turnData = new TurnData(
                     turn,
                     opponentVerse,
+                    selectedTheme,
                     new List<string>(submittedRhymes),
                     playerVerse
                 );                                                                                      // ターンデータの生成

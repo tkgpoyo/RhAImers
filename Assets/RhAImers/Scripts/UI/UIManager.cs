@@ -1,12 +1,14 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using RhAImers.Battle;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 
 namespace RhAImers.UI
@@ -113,6 +115,10 @@ namespace RhAImers.UI
         [SerializeField] private float _invalidInputVibrationAmplitude = 12f;
         /// <summary>振動回数</summary>
         [SerializeField] private int _invalidInputVibrationCount = 4;
+
+        [Header("ライムテーマ選択")]
+        [SerializeField] private GameObject _rhymeSelectionPrefab;
+        [SerializeField] private GameObject _rhymeSelectionPanel;
 
         [Header("Rhyme Tab UI")]
         [SerializeField] private ScrollRect _inputRhymesScrollRect;
@@ -372,6 +378,51 @@ namespace RhAImers.UI
             return StartVerseLinePresentationAsync(_opponentVerseText, verse, BattleUiPanelKind.OpponentVerse);
         }
 
+        public async UniTask<string> ShowRhymeSelect(int sec, List<string> candidates, CancellationToken token)
+        {
+            float elapsed = 0f;
+            string selectedRhyme = string.Empty;
+            var buttons = new List<Button>();
+            var rhymeObjs = new List<GameObject>();
+            var xCoord = 0f;
+            foreach (var candidate in candidates)
+            {
+                var rhymeObj = Instantiate(_rhymeSelectionPrefab, _rhymeSelectionPanel.transform);
+                rhymeObjs.Add(rhymeObj);
+                var rectTransform = rhymeObj.GetComponent<RectTransform>();
+                rectTransform.anchorMin = new Vector2(xCoord, 0);
+                rectTransform.anchorMax = new Vector2(xCoord, 1);
+                var button = rhymeObj.GetComponentInChildren<Button>();
+                var tmp = rhymeObj.GetComponentInChildren<TMP_Text>();
+                tmp.text = candidate;
+                UnityAction listener = () => { selectedRhyme = tmp.text; };
+                button.onClick.AddListener(listener);
+                buttons.Add(button);
+                xCoord += 1.0f / candidates.Count;
+            }
+            while (elapsed < sec * 1000)
+            {
+                // ライムが選ばれればループを抜ける
+                if (!string.IsNullOrEmpty(selectedRhyme)) { break; }
+                await UniTask.Yield(token);
+                elapsed += Time.deltaTime;
+            }
+            if (string.IsNullOrEmpty(selectedRhyme))
+            {
+                selectedRhyme = candidates.First();
+            }
+            foreach (var button in buttons)
+            {
+                if (button.IsActive()) { continue; }
+                button.onClick.RemoveAllListeners();
+            }
+            foreach (var rhymeObj in rhymeObjs)
+            {
+                Destroy(rhymeObj);
+            }
+            return selectedRhyme;
+        }
+
         public void ShowInputTimer(int sec)
         {
             ResetScoringResultTransitionState(hideOverlay: true);
@@ -385,7 +436,7 @@ namespace RhAImers.UI
             SetText(_inputTimerText, FormatTimer(sec));
         }
 
-        public void ShowInputRhymes(IReadOnlyList<string> rhymes)
+        public void ShowInputRhymes(string theme, IReadOnlyList<string> rhymes)
         {
             ResetScoringResultTransitionState(hideOverlay: true);
             StopPlayerVerseGenerationWaitEffectImmediate();
