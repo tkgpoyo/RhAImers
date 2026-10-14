@@ -52,6 +52,7 @@ namespace RhAImers.Core
         private ResultSceneManager _resultSceneManager;
 
         [SerializeField] private int _defaultInputTimeLimitSec = 30;
+        [SerializeField, Range(1, 5), Tooltip("プロンプトのリトライ数です．")] private int _retryNum = 3;
 
         /// <summary>モード選択画面で選択された難易度</summary>
         private Difficulty _selectedDifficulty = Difficulty.Normal;
@@ -556,19 +557,25 @@ namespace RhAImers.Core
 
         private async UniTask<Verse> GenerateWithFallbackAsync(Func<IVerseGenerationService, CancellationToken, UniTask<Verse>> generate, CancellationToken ct)
         {
-            try {
-                return await generate(_verseGenerationService, ct);
+            for (int retry = 0; retry < _retryNum; retry++)
+            {
+                try {
+                    var verse = await generate(_verseGenerationService, ct);    // リクエスト成功したらそのバースを返す
+                    return verse;
+                }
+                catch(Exception ex)
+                {
+                    Debug.LogWarning(ex);
+                    Debug.Log($"リトライ数：{retry+1}");
+                    continue;                                                   // リトライ数上限まで繰り返す
+                }
             }
-            catch {
-                // TODO: API系のエラーのみを掴む
-                _verseGenerationService = GetVerseGenerationService(VerseGenerationType.Fixed);
-                return await generate(_verseGenerationService, ct);
-            }
+            return await generate(GetVerseGenerationService(VerseGenerationType.Fixed), ct);
 
             /// <summary>
             /// バース生成方法を指定して、対応する<see cref="IVerseGenerationService"/>を取得します。
             /// </summary>
-            IVerseGenerationService GetVerseGenerationService(VerseGenerationType verseGenerationType)
+            static IVerseGenerationService GetVerseGenerationService(VerseGenerationType verseGenerationType)
             {
                 return verseGenerationType switch
                 {

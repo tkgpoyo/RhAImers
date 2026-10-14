@@ -20,7 +20,7 @@ namespace RhAImers.VerseGeneration
         public async UniTask<Verse> GenerateOpponentVerseAsync(BattleContext context, CancellationToken ct = default)
         {
             var prompt   = _promptBuilder.BuildOpponentVersePrompt(context, out var words);
-            var response = await _client.Request(prompt);
+            var response = await _client.Request(prompt, ct);
             // Opponent highlights are not tracked — we don't know which words the LLM chose to rhyme.
             //return new Verse(response, Array.Empty<VerseHighlight>());
             return new Verse(response, VerseHighlightFinder.Find(response, words));
@@ -29,7 +29,7 @@ namespace RhAImers.VerseGeneration
         public async UniTask<Verse> GeneratePlayerVerseAsync(IReadOnlyList<string> rhymeWords, string opponentVerseText, CancellationToken ct = default)
         {
             var prompt     = _promptBuilder.BuildPlayerVersePrompt(rhymeWords, opponentVerseText);
-            var response   = await _client.Request(prompt);
+            var response   = await _client.Request(prompt, ct);
             var highlights = VerseHighlightFinder.Find(response, rhymeWords);
             return new Verse(response, highlights);
         }

@@ -2,6 +2,7 @@ using Cysharp.Threading.Tasks;
 using System;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using UnityEngine;
 
 namespace RhAImers.VerseGeneration
@@ -13,7 +14,8 @@ namespace RhAImers.VerseGeneration
     /// </summary>
     public class LlmClient
     {
-        private static readonly HttpClient Http = new HttpClient();
+        // 既定の Timeout は 100 秒．通信断で応答が返らないとその間ずっと待ち続けるため短くする
+        private static readonly HttpClient Http = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
 
         private const string EndpointTemplate =
             "https://generativelanguage.googleapis.com/v1beta/models/{0}:generateContent?key={1}";
@@ -52,8 +54,12 @@ namespace RhAImers.VerseGeneration
             return new LlmClient(apiKey, model);
         }
 
-        public async UniTask<string> Request(string prompt)
+        public async UniTask<string> Request(string prompt, CancellationToken ct = default)
         {
+            // オフラインなら接続を試みずに即失敗させる
+            if (Application.internetReachability == NetworkReachability.NotReachable)
+                throw new HttpRequestException("[LlmClient] Network is not reachable.");
+
             var url     = string.Format(EndpointTemplate, _model, _apiKey);
             var body    = BuildRequestBody(prompt);
             var content = new StringContent(body, Encoding.UTF8, "text/plain");
@@ -62,7 +68,7 @@ namespace RhAImers.VerseGeneration
             {
                 HttpResponseMessage response;
                 string responseBody;
-                response = await Http.SendAsync(request);
+                response = await Http.SendAsync(request, ct);
                 responseBody = await response.Content.ReadAsStringAsync();
 
                 if (!response.IsSuccessStatusCode)
