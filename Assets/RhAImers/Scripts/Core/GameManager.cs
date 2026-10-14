@@ -387,7 +387,7 @@ namespace RhAImers.Core
                 // ライム選択
                 cts = new CancellationTokenSource();
                 var rhymeSelector = new RhymeSelector();
-                var themes = rhymeSelector.SelectRandomRhyme(3);
+                var themes = rhymeSelector.SelectRandomRhyme(3, settings.Difficulty);
                 var selectedTheme = await _uiManager.ShowRhymeSelect(10, themes, cts.Token);
                 // TODO: 雑な Dispose処理
                 cts.Dispose();
