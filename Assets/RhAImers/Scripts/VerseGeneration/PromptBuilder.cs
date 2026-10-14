@@ -221,18 +221,17 @@ namespace RhAImers.VerseGeneration
         {
             var sb = new StringBuilder();
             sb.AppendLine(
-@"あなたはラップバトルの審査員です。
-これまでの全ターンのプレイヤーの韻の踏み方やバースについて、良かった点や韻の組み合わせの工夫などを評価し、フィードバックを作成してください。
-簡潔にコメントし、出力はフィードバック本文のみとしてください。
+@"あなたはラップバトルの審査員です。このラップバトルではお題の単語についてプレイヤーが韻を踏みます．
+これまでの全ターンのプレイヤーの韻の踏み方について、良かった点や韻の組み合わせの工夫などを評価し、フィードバックを作成してください。
+全てのターンについて，個別によかった韻を挙げてください．出力はフィードバック本文のみとしてください。
 
 【これまでのターン】");
 
             for (int i = 0; i < turns.Count; i++)
             {
                 sb.AppendLine($"--- ターン{i + 1} ---");
-                sb.AppendLine($"相手のバース:\n{turns[i].OpponentVerse.Text}");
+                sb.AppendLine($"お題： {turns[i].ThemeWord}");
                 sb.AppendLine($"プレイヤーが入力した韻語: {string.Join("・", turns[i].InputRhymes)}");
-                sb.AppendLine($"生成されたプレイヤーのバース:\n{turns[i].GeneratedPlayerVerse.Text}");
             }
 
             return sb.ToString();
