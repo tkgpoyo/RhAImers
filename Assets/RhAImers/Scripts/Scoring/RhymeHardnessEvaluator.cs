@@ -3,6 +3,7 @@ using System;
 using Cysharp.Threading.Tasks;
 using RhAImers.VerseGeneration;
 using System.Linq;
+using RhAImers.Input;
 
 namespace RhAImers.Scoring
 {
@@ -20,7 +21,7 @@ namespace RhAImers.Scoring
         }
 
         // CHG 2026/08/21 ota 戻り値を float から Tuple<float, float> に変更（平均文字数の取得）
-        public async UniTask<(float averageHardness, float averageLength)> EvaluateAsync(IReadOnlyList<string> originalWords)
+        public async UniTask<(float averageHardness, float averageLength)> EvaluateAsync(ThemeRhyme themeWord, IReadOnlyList<string> originalWords)
         {
             if (originalWords == null || originalWords.Count <= 1)
                 return new(0f, 0f);
@@ -56,9 +57,10 @@ namespace RhAImers.Scoring
                 }
             }
 
-            return new(Evaluate(words), (float)converted.Average(w => w.Length));
+            return new(Evaluate(themeWord.Vowel, words), (float)converted.Average(w => w.Length));
         }
 
+        [Obsolete("入力単語同士の韻比較から，お題語との比較に変更するため，このメソッドは使わないです．")]
         public float Evaluate(IReadOnlyList<string> words)
         {
             if (words == null || words.Count <= 1)
@@ -73,6 +75,21 @@ namespace RhAImers.Scoring
                 }
             }
             var pairs = (words.Count * (words.Count - 1)) / 2f;
+
+            return total / pairs;
+        }
+
+        public float Evaluate(string theme, IReadOnlyList<string> words)
+        {
+            if (words == null || words.Count <= 1)
+                return 0f;
+
+            var total = 0f;
+            for (var i = 0; i < words.Count ; i++)
+            {
+                total += EvaluatePair(theme, words[i]);
+            }
+            var pairs = words.Count;
 
             return total / pairs;
         }

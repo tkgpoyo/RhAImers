@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using RhAImers.Battle;
+using RhAImers.Input;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
@@ -404,7 +405,7 @@ namespace RhAImers.UI
             return StartVerseLinePresentationAsync(_opponentVerseText, verse, BattleUiPanelKind.OpponentVerse);
         }
 
-        public async UniTask<string> ShowRhymeSelect(int sec, List<string> candidates, CancellationToken token)
+        public async UniTask<ThemeRhyme> ShowRhymeSelect(int sec, List<ThemeRhyme> candidates, CancellationToken token)
         {
             if (_rhymeSelectionCts != null)
             {
@@ -433,7 +434,7 @@ namespace RhAImers.UI
                 throw new InvalidOperationException("Assign CandidateButtons with Horizontal Layout Group to Rhyme Selection Buttons Root, not RhymeSelectPanel.");
             }
 
-            string selectedRhyme = string.Empty;
+            ThemeRhyme selectedRhyme = null;
             var buttons = new List<Button>();
             var rhymeObjs = new List<GameObject>();
             var selectionCts = CancellationTokenSource.CreateLinkedTokenSource(token, destroyCancellationToken);
@@ -446,7 +447,7 @@ namespace RhAImers.UI
                 ShowOpponentVersePhase();
                 SetResultVisible(false);
 
-                foreach (string candidate in candidates)
+                foreach (var candidate in candidates)
                 {
                     var rhymeObj = Instantiate(_rhymeSelectionPrefab, _rhymeSelectionButtonsRoot);
                     rhymeObjs.Add(rhymeObj);
@@ -458,14 +459,14 @@ namespace RhAImers.UI
                     }
 
                     label.richText = false;
-                    label.text = candidate;
+                    label.text = candidate.Word;
                     button.interactable = true;
                     var navigation = button.navigation;
                     navigation.mode = Navigation.Mode.None;
                     button.navigation = navigation;
                     button.onClick.AddListener(() =>
                     {
-                        if (!string.IsNullOrEmpty(selectedRhyme)) return;
+                        if (selectedRhyme != null) return;
                         selectedRhyme = candidate;
                         foreach (var other in buttons) other.interactable = false;
                     });
@@ -492,18 +493,18 @@ namespace RhAImers.UI
                 float duration = Mathf.Max(0f, sec);
                 float elapsed = 0f;
                 UpdateRhymeSelectionTimer(duration);
-                while (elapsed < duration && string.IsNullOrEmpty(selectedRhyme))
+                while (elapsed < duration && selectedRhyme == null)
                 {
                     await UniTask.Yield(PlayerLoopTiming.Update, selectionCts.Token);
                     elapsed += Time.unscaledDeltaTime;
                     UpdateRhymeSelectionTimer(duration - elapsed);
                 }
                 selectionCts.Token.ThrowIfCancellationRequested();
-                if (string.IsNullOrEmpty(selectedRhyme))
+                if (selectedRhyme == null)
                 {
-                    selectedRhyme = candidates[0];
+                    selectedRhyme = candidates[0];  // 時間切れ時は先頭の候補
                 }
-                UpdateInputThemeText(selectedRhyme);
+                UpdateInputThemeText(selectedRhyme.Word);
                 return selectedRhyme;
             }
             finally

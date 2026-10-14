@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using RhAImers.Input;
 
 namespace RhAImers.Battle
 {
@@ -15,14 +16,14 @@ namespace RhAImers.Battle
         public IReadOnlyList<string> InputRhymes { get; }
         /// <summary>プレイヤーのバース</summary>
         public Verse GeneratedPlayerVerse { get; }
-        /// <summary>韻のテーマとなる単語</summary>
-        public string ThemeWord { get; }
+        /// <summary>お題語</summary>
+        public ThemeRhyme Theme { get; }
 
-        public TurnData(int turnIndex, Verse opponentVerse, string themeWord, IReadOnlyList<string> inputRhymes, Verse generatedPlayerVerse)
+        public TurnData(int turnIndex, Verse opponentVerse, ThemeRhyme theme, IReadOnlyList<string> inputRhymes, Verse generatedPlayerVerse)
         {
             TurnIndex = turnIndex;
             OpponentVerse = opponentVerse;
-            ThemeWord = themeWord;
+            Theme = theme;
             InputRhymes = inputRhymes;
             GeneratedPlayerVerse = generatedPlayerVerse;
         }

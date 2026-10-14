@@ -398,7 +398,7 @@ namespace RhAImers.Core
                 _inputRhymeCts = cts;
                 CurrentState = GameState.RhymeInput;
                 try {
-                    _rhymeInputController.StartInput(selectedTheme);                                    // ライム入力の開始
+                    _rhymeInputController.StartInput(selectedTheme.Word);                                    // ライム入力の開始
                     await InputTimer(settings.InputTimeLimitSec, _uiManager, _inputRhymeCts.Token);     // 入力タイマー
                 }
                 catch {

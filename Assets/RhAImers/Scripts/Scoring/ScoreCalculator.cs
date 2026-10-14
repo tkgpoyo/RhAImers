@@ -24,7 +24,7 @@ namespace RhAImers.Scoring
                 // ADD 2026/08/21 ota 平均文字数を追加
                 var rhymeCount = turn.InputRhymes.Count;
                 //var averageHardness = await _hardnessEvaluator.EvaluateAsync(turn.InputRhymes);
-                (float averageHardness, float averageLength) = await _hardnessEvaluator.EvaluateAsync(turn.InputRhymes);
+                (float averageHardness, float averageLength) = await _hardnessEvaluator.EvaluateAsync(turn.Theme, turn.InputRhymes);
                 Debug.Log(averageLength);
                 var relevanceCount = await _relevanceEvaluator.EvaluateAsync(turn.InputRhymes, turn.OpponentVerse.Text);
                 //scores.Add(new TurnScore(rhymeCount, averageHardness, relevanceCount));

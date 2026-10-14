@@ -230,7 +230,7 @@ namespace RhAImers.VerseGeneration
             for (int i = 0; i < turns.Count; i++)
             {
                 sb.AppendLine($"--- ターン{i + 1} ---");
-                sb.AppendLine($"お題： {turns[i].ThemeWord}");
+                sb.AppendLine($"お題： {turns[i].Theme.Word}");
                 sb.AppendLine($"プレイヤーが入力した韻語: {string.Join("・", turns[i].InputRhymes)}");
             }
 
