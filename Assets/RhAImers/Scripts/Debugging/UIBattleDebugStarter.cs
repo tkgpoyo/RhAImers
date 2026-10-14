@@ -164,7 +164,7 @@ namespace RhAImers.Debugging
             _remainingTime = _inputTimeLimitSec;
             _uiManager?.ShowInputTimer(_inputTimeLimitSec);
 
-            _rhymeInputController?.StartInput();
+            _rhymeInputController?.StartInput("デバッグ用テーマ");
 
             _isWaitingForSubmit = true;
             _turnStartCoroutine = null;
