@@ -119,6 +119,16 @@ namespace RhAImers.UI
         [Header("ライムテーマ選択")]
         [SerializeField] private GameObject _rhymeSelectionPrefab;
         [SerializeField] private GameObject _rhymeSelectionPanel;
+        [SerializeField] private UIPanelTransition _rhymeSelectionTransition;
+        [SerializeField] private RectTransform _rhymeSelectionButtonsRoot;
+        [SerializeField] private TMP_Text _rhymeSelectionTimerText;
+        [SerializeField] private TMP_Text _inputThemeText;
+        [SerializeField] private string _inputThemePrefix = "お題：";
+
+        [Header("Rhyme Selection Show Sound")]
+        [SerializeField] private AudioSource _rhymeSelectionAudioSource;
+        [SerializeField] private AudioClip _rhymeSelectionShowClip;
+        [SerializeField] private float _rhymeSelectionShowVolume = 1f;
 
         [Header("Rhyme Tab UI")]
         [SerializeField] private ScrollRect _inputRhymesScrollRect;
@@ -210,6 +220,7 @@ namespace RhAImers.UI
         private bool _isBattleStartSignalPlaying;
         private CancellationTokenSource _battleStartSignalCts;
         private CancellationTokenSource _verseLinePresentationCts;
+        private CancellationTokenSource _rhymeSelectionCts;
         private Vector2 _battleStartSignalCenterPosition;
         private TMP_Text _activeVerseLineText;
         private CanvasGroup _activeVerseLineCanvasGroup;
@@ -256,6 +267,16 @@ namespace RhAImers.UI
             ApplyPhaseVisibility(BattlePhase.Hidden, animate: false);
             SetResultVisible(false);
             HideScoringOverlayImmediate();
+            if (_rhymeSelectionPanel != null)
+            {
+                if (_rhymeSelectionTransition == null)
+                {
+                    _rhymeSelectionTransition = _rhymeSelectionPanel.GetComponent<UIPanelTransition>();
+                }
+                if (_rhymeSelectionTransition != null) _rhymeSelectionTransition.HideImmediate();
+                else _rhymeSelectionPanel.SetActive(false);
+            }
+            UpdateInputThemeText(string.Empty);
         }
 
         private void OnEnable()
@@ -276,6 +297,11 @@ namespace RhAImers.UI
             CancelBattleStartSignal();
             CancelVerseLinePresentation();
             CancelDelayedResultSelected();
+            _rhymeSelectionCts?.Cancel();
+            if (_rhymeSelectionPanel != null)
+            {
+                _rhymeSelectionPanel.SetActive(false);
+            }
         }
 
         /// <summary>
@@ -380,47 +406,145 @@ namespace RhAImers.UI
 
         public async UniTask<string> ShowRhymeSelect(int sec, List<string> candidates, CancellationToken token)
         {
-            float elapsed = 0f;
+            if (_rhymeSelectionCts != null)
+            {
+                throw new InvalidOperationException("Rhyme selection is already running.");
+            }
+            if (candidates == null || candidates.Count == 0)
+            {
+                throw new ArgumentException("Rhyme selection requires at least one candidate.", nameof(candidates));
+            }
+            if (_rhymeSelectionPrefab == null || _rhymeSelectionPanel == null
+                || _rhymeSelectionButtonsRoot == null || _rhymeSelectionTimerText == null)
+            {
+                throw new InvalidOperationException("Assign Rhyme Selection Prefab, Panel, Buttons Root and Timer Text on UIManager.");
+            }
+            if (_rhymeSelectionTransition == null)
+            {
+                _rhymeSelectionTransition = _rhymeSelectionPanel.GetComponent<UIPanelTransition>();
+            }
+            if (_rhymeSelectionTransition == null)
+            {
+                throw new InvalidOperationException("Add UIPanelTransition to RhymeSelectPanel and assign Rhyme Selection Transition.");
+            }
+            if (_rhymeSelectionButtonsRoot.gameObject == _rhymeSelectionPanel
+                || _rhymeSelectionButtonsRoot.GetComponent<HorizontalLayoutGroup>() == null)
+            {
+                throw new InvalidOperationException("Assign CandidateButtons with Horizontal Layout Group to Rhyme Selection Buttons Root, not RhymeSelectPanel.");
+            }
+
             string selectedRhyme = string.Empty;
             var buttons = new List<Button>();
             var rhymeObjs = new List<GameObject>();
-            var xCoord = 0f;
-            foreach (var candidate in candidates)
+            var selectionCts = CancellationTokenSource.CreateLinkedTokenSource(token, destroyCancellationToken);
+            _rhymeSelectionCts = selectionCts;
+            try
             {
-                var rhymeObj = Instantiate(_rhymeSelectionPrefab, _rhymeSelectionPanel.transform);
-                rhymeObjs.Add(rhymeObj);
-                var rectTransform = rhymeObj.GetComponent<RectTransform>();
-                rectTransform.anchorMin = new Vector2(xCoord, 0);
-                rectTransform.anchorMax = new Vector2(xCoord, 1);
-                var button = rhymeObj.GetComponentInChildren<Button>();
-                var tmp = rhymeObj.GetComponentInChildren<TMP_Text>();
-                tmp.text = candidate;
-                UnityAction listener = () => { selectedRhyme = tmp.text; };
-                button.onClick.AddListener(listener);
-                buttons.Add(button);
-                xCoord += 1.0f / candidates.Count;
+                selectionCts.Token.ThrowIfCancellationRequested();
+                StopPlayerVerseGenerationWaitEffectImmediate();
+                CancelVerseLinePresentation();
+                ShowOpponentVersePhase();
+                SetResultVisible(false);
+
+                foreach (string candidate in candidates)
+                {
+                    var rhymeObj = Instantiate(_rhymeSelectionPrefab, _rhymeSelectionButtonsRoot);
+                    rhymeObjs.Add(rhymeObj);
+                    var button = rhymeObj.GetComponentInChildren<Button>(true);
+                    var label = rhymeObj.GetComponentInChildren<TMP_Text>(true);
+                    if (button == null || label == null)
+                    {
+                        throw new InvalidOperationException("Rhyme Selection Prefab requires a Button and TMP text.");
+                    }
+
+                    label.richText = false;
+                    label.text = candidate;
+                    button.interactable = true;
+                    var navigation = button.navigation;
+                    navigation.mode = Navigation.Mode.None;
+                    button.navigation = navigation;
+                    button.onClick.AddListener(() =>
+                    {
+                        if (!string.IsNullOrEmpty(selectedRhyme)) return;
+                        selectedRhyme = candidate;
+                        foreach (var other in buttons) other.interactable = false;
+                    });
+                    buttons.Add(button);
+                    var layout = rhymeObj.GetComponent<LayoutElement>();
+                    if (layout == null) layout = rhymeObj.AddComponent<LayoutElement>();
+                    layout.ignoreLayout = false;
+                    layout.minWidth = 0f;
+                    layout.preferredWidth = -1f;
+                    layout.flexibleWidth = 1f;
+                    rhymeObj.SetActive(true);
+                }
+
+                // Capture generated labels so the shared panel effect can flash and restore them.
+                _rhymeSelectionTransition.CaptureCurrentVisualState();
+                UpdateRhymeSelectionTimer(Mathf.Max(0f, sec));
+                _rhymeSelectionTransition.Show();
+                PlayRhymeSelectionShowSound();
+                LayoutRebuilder.ForceRebuildLayoutImmediate(_rhymeSelectionButtonsRoot);
+                while (_rhymeSelectionTransition.IsTransitioning)
+                {
+                    await UniTask.Yield(PlayerLoopTiming.Update, selectionCts.Token);
+                }
+                float duration = Mathf.Max(0f, sec);
+                float elapsed = 0f;
+                UpdateRhymeSelectionTimer(duration);
+                while (elapsed < duration && string.IsNullOrEmpty(selectedRhyme))
+                {
+                    await UniTask.Yield(PlayerLoopTiming.Update, selectionCts.Token);
+                    elapsed += Time.unscaledDeltaTime;
+                    UpdateRhymeSelectionTimer(duration - elapsed);
+                }
+                selectionCts.Token.ThrowIfCancellationRequested();
+                if (string.IsNullOrEmpty(selectedRhyme))
+                {
+                    selectedRhyme = candidates[0];
+                }
+                UpdateInputThemeText(selectedRhyme);
+                return selectedRhyme;
             }
-            while (elapsed < sec * 1000)
+            finally
             {
-                // ライムが選ばれればループを抜ける
-                if (!string.IsNullOrEmpty(selectedRhyme)) { break; }
-                await UniTask.Yield(token);
-                elapsed += Time.deltaTime;
+                foreach (var rhymeObj in rhymeObjs)
+                {
+                    if (rhymeObj == null) continue;
+                    rhymeObj.SetActive(false);
+                    Destroy(rhymeObj);
+                }
+                if (_rhymeSelectionTransition != null) _rhymeSelectionTransition.HideImmediate();
+                else if (_rhymeSelectionPanel != null) _rhymeSelectionPanel.SetActive(false);
+                if (_rhymeSelectionCts == selectionCts) _rhymeSelectionCts = null;
+                selectionCts.Dispose();
             }
-            if (string.IsNullOrEmpty(selectedRhyme))
+        }
+
+        private void PlayRhymeSelectionShowSound()
+        {
+            if (_rhymeSelectionShowClip == null) return;
+            if (_rhymeSelectionAudioSource == null)
             {
-                selectedRhyme = candidates.First();
+                _rhymeSelectionAudioSource = gameObject.AddComponent<AudioSource>();
+                _rhymeSelectionAudioSource.playOnAwake = false;
+                _rhymeSelectionAudioSource.loop = false;
+                _rhymeSelectionAudioSource.spatialBlend = 0f;
             }
-            foreach (var button in buttons)
-            {
-                if (button.IsActive()) { continue; }
-                button.onClick.RemoveAllListeners();
-            }
-            foreach (var rhymeObj in rhymeObjs)
-            {
-                Destroy(rhymeObj);
-            }
-            return selectedRhyme;
+            _rhymeSelectionAudioSource.PlayOneShot(_rhymeSelectionShowClip, _rhymeSelectionShowVolume);
+        }
+
+        private void UpdateRhymeSelectionTimer(float remainingSeconds)
+        {
+            SetText(_rhymeSelectionTimerText, $"残り {Mathf.CeilToInt(Mathf.Max(0f, remainingSeconds))} 秒");
+        }
+
+        private void UpdateInputThemeText(string theme)
+        {
+            if (_inputThemeText == null) return;
+            _inputThemeText.richText = false;
+            SetText(_inputThemeText, string.IsNullOrWhiteSpace(theme) ? string.Empty : _inputThemePrefix + theme);
+            _inputThemeText.gameObject.SetActive(!string.IsNullOrWhiteSpace(theme));
         }
 
         public void ShowInputTimer(int sec)
@@ -438,6 +562,7 @@ namespace RhAImers.UI
 
         public void ShowInputRhymes(string theme, IReadOnlyList<string> rhymes)
         {
+            UpdateInputThemeText(theme);
             ResetScoringResultTransitionState(hideOverlay: true);
             StopPlayerVerseGenerationWaitEffectImmediate();
             CaptureLatestInputRhymes(rhymes);
