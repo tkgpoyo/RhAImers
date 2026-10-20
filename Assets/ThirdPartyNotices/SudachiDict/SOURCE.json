@@ -1,0 +1,27 @@
+{
+  "upstream": "https://github.com/WorksApplications/SudachiDict",
+  "source_release": "Not identified",
+  "source_files": [
+    {
+      "name": "small_lex.csv",
+      "sha256": "fa182e69126031f3165c3a76491b4dc9512b14d8b9aeb0181d0f84f6adaa3ef6"
+    },
+    {
+      "name": "core_lex.csv",
+      "sha256": "27e3a504c7cb9401aaeca56e8b0d01300beed0fed9d28ecbf19e2474aa67ea0c"
+    },
+    {
+      "name": "notcore_lex.csv",
+      "sha256": "2b4bc7b45189011503926e4b33d43b106954033326d5ccc1f851407b2cecd9cc"
+    }
+  ],
+  "upstream_legal_url": "https://github.com/WorksApplications/SudachiDict/blob/develop/LEGAL",
+  "source_version_matches_legal": "Not established",
+  "upstream_legal_sha256": "725a8776b38e058b185e905594bc9a2437dbf3787df022fffeefedb9a84e4665",
+  "license_text_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+  "curated_dictionary_before_notice_sha256": "84b92ea65bceb59476d03b1ae5a6a47f30ab178774c778ad9b77474514951c74",
+  "published_dictionary_sha256": "1dcf796efb5b8ac9865af04b38e58a6a9c7833d570e133a70068584fa0604465",
+  "groups": 226,
+  "word_count": 2256,
+  "wordfreq_used": false
+}
