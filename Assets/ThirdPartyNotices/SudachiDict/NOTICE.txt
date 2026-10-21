@@ -1,0 +1,34 @@
+RhAImers curated rhyme dictionary
+================================
+
+Applies to: Assets/Resources/RhymeDictionary/rhymeDictionary.json
+
+Derived from SudachiDict by Works Applications Co., Ltd.
+Copyright (c) 2017-2023 Works Applications Co., Ltd.
+https://github.com/WorksApplications/SudachiDict
+
+Licensed under the Apache License, Version 2.0.
+See LICENSE-2.0.txt for the complete license and disclaimer.
+The dictionary also contains material derived from UniDic and NEologd.
+Their copyright notices, conditions and disclaimers are retained in LEGAL.txt.
+
+This is a modified, curated derivative, not an unmodified SudachiDict release.
+Modifications: extraction of nouns; exclusion of proper-noun rows; normalization
+of readings; conversion to RhAImers vowel keys; editorial selection of familiar
+vocabulary; selection of representative spellings; removal of keys shorter than
+three characters and groups with fewer than four distinct words; conversion to
+Unity-compatible JSON.
+
+The resulting dictionary has 226 groups and 2,256 distinct selected words.
+No wordfreq software or frequency data was used.
+No affiliation with or endorsement by the upstream contributors is implied.
+
+The exact release of the local source CSV files has not been identified.
+SOURCE.json records their file hashes without asserting an unverified version.
+LEGAL.txt was obtained from the upstream develop branch; a match to the exact
+local CSV release has not been established.
+
+The license identification here applies to this derived dictionary, not to the
+entire RhAImers game or its other assets.
+When distributing a game build containing this dictionary, retain these files
+in the accompanying documentation or other distribution materials as well.
