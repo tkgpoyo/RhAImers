@@ -62,7 +62,7 @@ namespace RhAImers.VerseGeneration
 
             var url     = string.Format(EndpointTemplate, _model, _apiKey);
             var body    = BuildRequestBody(prompt);
-            var content = new StringContent(body, Encoding.UTF8, "text/plain");
+            var content = new StringContent(body, Encoding.UTF8, "application/json");
 
             using (var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = content })
             {
