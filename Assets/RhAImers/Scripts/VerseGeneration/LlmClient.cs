@@ -20,7 +20,7 @@ namespace RhAImers.VerseGeneration
         private const string EndpointTemplate =
             "https://generativelanguage.googleapis.com/v1beta/models/{0}:generateContent?key={1}";
 
-        private const string DefaultModel = "gemini-3.1-flash-lite";
+        private const string DefaultModel = "gemini-3.5-flash-lite";
 
         private const string ApiKeyEnvironmentVariable = "GemKey";
 

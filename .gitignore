@@ -111,3 +111,6 @@ InitTestScene*.unity*
 /[aA]ssets/Resources/[cC]onfigs/ApiKeyConfig.asset.meta
 
 /**/.DS_Store
+# ローカル専用の秘密情報（SSH 認証情報など）。コミットしない
+/[Aa]ssets/RhAImers/Local/
+/[Aa]ssets/RhAImers/Local.meta

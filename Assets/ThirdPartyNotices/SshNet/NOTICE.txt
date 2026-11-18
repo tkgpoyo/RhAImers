@@ -1,0 +1,13 @@
+Assets/Plugins/SshNet に同梱している DLL の出典とライセンス
+
+| DLL                                                    | NuGet パッケージ                                      | 版      | lib TFM        | ライセンス                     |
+|--------------------------------------------------------|-------------------------------------------------------|---------|----------------|--------------------------------|
+| Renci.SshNet.dll                                       | SSH.NET                                               | 2026.0.1| netstandard2.0 | MIT (LICENSE-SSH.NET.txt)      |
+| BouncyCastle.Cryptography.dll                          | BouncyCastle.Cryptography                             | 2.7.0   | netstandard2.0 | MIT (LICENSE-BouncyCastle.txt) |
+| Microsoft.Extensions.Logging.Abstractions.dll          | Microsoft.Extensions.Logging.Abstractions             | 8.0.3   | netstandard2.0 | MIT (LICENSE-dotnet-runtime.txt)|
+| Microsoft.Extensions.DependencyInjection.Abstractions.dll | Microsoft.Extensions.DependencyInjection.Abstractions | 8.0.2 | netstandard2.1 | MIT (LICENSE-dotnet-runtime.txt)|
+| System.Formats.Asn1.dll                                | System.Formats.Asn1                                   | 10.0.15 | netstandard2.0 | MIT (LICENSE-dotnet-runtime.txt)|
+| Microsoft.Bcl.AsyncInterfaces.dll                      | Microsoft.Bcl.AsyncInterfaces                         | 10.0.15 | netstandard2.1 | MIT (LICENSE-dotnet-runtime.txt)|
+
+Upstream: https://github.com/sshnet/SSH.NET
+System.Memory / System.Buffers / System.Threading.Tasks.Extensions は Unity (.NET Standard 2.1) 側が提供するため同梱していない。
