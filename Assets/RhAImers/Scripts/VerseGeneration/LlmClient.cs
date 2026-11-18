@@ -20,7 +20,7 @@ namespace RhAImers.VerseGeneration
         private const string EndpointTemplate =
             "https://generativelanguage.googleapis.com/v1beta/models/{0}:generateContent?key={1}";
 
-        private const string DefaultModel = "gemini-3.1-flash-lite";
+        private const string DefaultModel = "gemini-3.5-flash-lite";
 
         private const string ApiKeyEnvironmentVariable = "GemKey";
 
@@ -42,8 +42,8 @@ namespace RhAImers.VerseGeneration
         /// </summary>
         public static LlmClient CreateFromEnvironment(string model = DefaultModel)
         {
-            //var apiKey = Environment.GetEnvironmentVariable(ApiKeyEnvironmentVariable, EnvironmentVariableTarget.User);
-            var apiKey = ApiKeyConfig.Instance.ApiKey;          // 2026/07/04 ota Change to use ScriptableObject for API key storage instead of environment variable
+            var apiKey = Environment.GetEnvironmentVariable(ApiKeyEnvironmentVariable, EnvironmentVariableTarget.User);
+            //var apiKey = ApiKeyConfig.Instance.ApiKey;          // 2026/07/04 ota Change to use ScriptableObject for API key storage instead of environment variable
             if (string.IsNullOrWhiteSpace(apiKey))
             {
                 throw new InvalidOperationException(
