@@ -751,6 +751,9 @@ MonoBehaviour:
   _rhymeInputField: {fileID: 1952534519}
   _submitButton: {fileID: 65190084}
   _uiManager: {fileID: 261815018}
+  _useVoiceInput: 0
+  _useLiveTranscription: 0
+  _apiKeyEnvironmentVariable: OPENAI_API_KEY
   _notifySubmitRequested: 1
   _refocusInputAfterAdd: 0
   _keepInputFieldFocused: 1

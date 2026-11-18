@@ -3,7 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using System.Threading;
 using Cysharp.Threading.Tasks;
+using RhAImers.Input.Voice;
 using RhAImers.UI;
 using TMPro;
 using UnityEngine;
@@ -18,6 +20,16 @@ namespace RhAImers.Input
         [SerializeField] private TMP_InputField _rhymeInputField;
         [SerializeField] private Button _submitButton;
         [SerializeField] private UIManager _uiManager;
+
+        [Header("Voice Input Settings")]
+        [SerializeField, Tooltip("キーボード入力と音声入力を切り替えるフラグ．trueで音声入力モード，falseでキーボード入力モード．")]
+        private bool _useVoiceInput = true;
+
+        [SerializeField, Tooltip("音声入力の方式．trueでリアルタイム文字起こし (gpt-live-transcribe)，falseで録音ファイル送信 (gpt-transcribe)．")]
+        private bool _useLiveTranscription = true;
+
+        [SerializeField, Tooltip("OpenAI APIキーを取得する環境変数名．")]
+        private string _apiKeyEnvironmentVariable = "OPENAI_API_KEY";
 
         [Header("Submit Event")]
         [SerializeField] private bool _notifySubmitRequested = true;
@@ -38,12 +50,43 @@ namespace RhAImers.Input
         private string _lastAddedWord = string.Empty;
         private string _theme = string.Empty;
 
+        // 音声入力関連の内部状態
+        private readonly MicrophoneRecorder _microphoneRecorder = new();
+        private OpenAiLiveTranscriptionSession _liveSession;
+        private CancellationTokenSource _voiceCts;
+        private bool _isVoiceRecording;
+        private bool _isTranscribing;
+        private string _completedLiveTranscript = string.Empty;
+
         public event Action SubmitRequested;
         public event Action<IReadOnlyList<string>> Submitted;
         public event Action<string> RhymeAdded;
         public event Action<string> RhymeRemoved;
 
         public IReadOnlyList<string> Rhymes => _rhymes.AsReadOnly();
+
+        public bool UseVoiceInput
+        {
+            get => _useVoiceInput;
+            set
+            {
+                _useVoiceInput = value;
+                if (_rhymeInputField != null)
+                {
+                    _rhymeInputField.readOnly = _useVoiceInput;
+                    if (_useVoiceInput)
+                    {
+                        _rhymeInputField.DeactivateInputField();
+                    }
+                }
+            }
+        }
+
+        public bool UseLiveTranscription
+        {
+            get => _useLiveTranscription;
+            set => _useLiveTranscription = value;
+        }
 
         private void Awake()
         {
@@ -81,6 +124,12 @@ namespace RhAImers.Input
                 {
                     placeholderGraphic.raycastTarget = false;
                 }
+
+                _rhymeInputField.readOnly = _useVoiceInput;
+                if (_useVoiceInput)
+                {
+                    _rhymeInputField.DeactivateInputField();
+                }
             }
 
             if (_submitButton != null)
@@ -112,6 +161,8 @@ namespace RhAImers.Input
 
         private void OnDisable()
         {
+            CancelVoiceInput();
+
             if (_rhymeInputField != null)
             {
                 _rhymeInputField.onValueChanged.RemoveListener(HandleInputValueChanged);
@@ -131,8 +182,40 @@ namespace RhAImers.Input
             StopRefocusCoroutine();
         }
 
+        private void OnDestroy()
+        {
+            CancelVoiceInput();
+        }
+
+        private void Update()
+        {
+            if (!_allowInput || !_useVoiceInput)
+            {
+                return;
+            }
+
+            if (GetSpaceKeyDown())
+            {
+                OnSpaceKeyDown();
+            }
+            else if (GetSpaceKey())
+            {
+                OnSpaceKeyHold();
+            }
+            else if (GetSpaceKeyUp())
+            {
+                OnSpaceKeyUp();
+            }
+        }
+
         private void LateUpdate()
         {
+            if (_useVoiceInput)
+            {
+                // 音声入力モード時はキーボードフォーカスの強制を抑制する
+                return;
+            }
+
             if (!_keepInputFieldFocused)
             {
                 return;
@@ -157,6 +240,7 @@ namespace RhAImers.Input
         public void StartInput(string theme)
         {
             StopRefocusCoroutine();
+            CancelVoiceInput();
 
             _allowInput = true;
             _rhymes.Clear();
@@ -171,6 +255,11 @@ namespace RhAImers.Input
             {
                 _rhymeInputField.SetTextWithoutNotify(string.Empty);
                 _rhymeInputField.interactable = true;
+                _rhymeInputField.readOnly = _useVoiceInput;
+                if (_useVoiceInput)
+                {
+                    _rhymeInputField.DeactivateInputField();
+                }
             }
 
             if (_submitButton != null)
@@ -178,7 +267,21 @@ namespace RhAImers.Input
                 _submitButton.interactable = true;
             }
 
-            RequestFocusInputFieldNextFrame();
+            if (_useVoiceInput)
+            {
+                // 音声入力モードならターン開始時にマイクをスタンバイ状態にしておく（スペース押下時のラグをゼロにする）
+                _microphoneRecorder.InitializeAndStartStandby(sampleRate: 24000);
+
+                if (_useLiveTranscription)
+                {
+                    // リアルタイムモードならターン開始時にあらかじめ WebSocket を事前接続しておく
+                    StartLiveTranscriptionSessionAsync(destroyCancellationToken).Forget();
+                }
+            }
+            else
+            {
+                RequestFocusInputFieldNextFrame();
+            }
         }
 
         public void AddRhyme(string word)
@@ -204,7 +307,7 @@ namespace RhAImers.Input
             _uiManager?.ShowInputRhymes(_theme, _rhymes);
             RhymeRemoved?.Invoke(trimmedWord);
 
-            if (_refocusInputAfterAdd)
+            if (!_useVoiceInput && _refocusInputAfterAdd)
             {
                 RequestFocusInputFieldNextFrame();
             }
@@ -222,7 +325,7 @@ namespace RhAImers.Input
             _uiManager?.ShowInputRhymes(_theme, _rhymes);
             RhymeRemoved?.Invoke(removedWord);
 
-            if (_refocusInputAfterAdd)
+            if (!_useVoiceInput && _refocusInputAfterAdd)
             {
                 RequestFocusInputFieldNextFrame();
             }
@@ -232,6 +335,7 @@ namespace RhAImers.Input
         {
             _allowInput = false;
             StopRefocusCoroutine();
+            CancelVoiceInput();
 
             if (_rhymeInputField != null)
             {
@@ -259,7 +363,10 @@ namespace RhAImers.Input
                 return;
             }
 
-            AddCurrentInputText();
+            if (!_useVoiceInput)
+            {
+                AddCurrentInputText();
+            }
 
             IReadOnlyList<string> submittedRhymes = Submit();
 
@@ -271,8 +378,317 @@ namespace RhAImers.Input
             }
         }
 
+        #region 音声入力処理 (Space長押し)
+        private void OnSpaceKeyDown()
+        {
+            if (_isTranscribing || _isVoiceRecording)
+            {
+                return;
+            }
+
+            _isVoiceRecording = true;
+            _completedLiveTranscript = string.Empty;
+
+            _voiceCts?.Cancel();
+            _voiceCts?.Dispose();
+            _voiceCts = new CancellationTokenSource();
+
+            if (_rhymeInputField != null)
+            {
+                _rhymeInputField.text = _useLiveTranscription ? "..." : "[録音中... 話してください]";
+            }
+
+            _microphoneRecorder.BeginVoiceCapture();
+
+            if (_useLiveTranscription)
+            {
+                if (_liveSession == null || !_liveSession.IsConnected)
+                {
+                    StartLiveTranscriptionSessionAsync(_voiceCts.Token).Forget();
+                }
+                else
+                {
+                    _liveSession.PrepareForNewSpeech();
+                }
+            }
+        }
+
+        private void OnSpaceKeyHold()
+        {
+            if (!_isVoiceRecording || !_useLiveTranscription || _liveSession == null)
+            {
+                return;
+            }
+
+            byte[] pcmChunk = _microphoneRecorder.GetNewAudioPcmChunk();
+            if (pcmChunk != null && pcmChunk.Length > 0)
+            {
+                _liveSession.SendAudioChunkAsync(pcmChunk, _voiceCts.Token).Forget();
+            }
+        }
+
+        private void OnSpaceKeyUp()
+        {
+            if (!_isVoiceRecording)
+            {
+                return;
+            }
+
+            _isVoiceRecording = false;
+
+            if (_useLiveTranscription)
+            {
+                FinishLiveTranscriptionAsync(_voiceCts.Token).Forget();
+            }
+            else
+            {
+                FinishFileTranscriptionAsync(_voiceCts.Token).Forget();
+            }
+        }
+
+        private async UniTaskVoid StartLiveTranscriptionSessionAsync(CancellationToken ct)
+        {
+            string apiKey = GetOpenAiApiKey();
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                Debug.LogError($"[RhymeInputController] 環境変数 '{_apiKeyEnvironmentVariable}' が設定されていません．");
+                if (_rhymeInputField != null)
+                {
+                    _rhymeInputField.text = "[APIキー未設定]";
+                }
+                return;
+            }
+
+            DisposeLiveSession();
+            _liveSession = new OpenAiLiveTranscriptionSession(
+                onDeltaReceived: liveText =>
+                {
+                    if (_rhymeInputField != null && (_isVoiceRecording || _isTranscribing))
+                    {
+                        _rhymeInputField.text = liveText;
+                    }
+                },
+                onCompleted: finalTranscript =>
+                {
+                    _completedLiveTranscript = finalTranscript;
+                }
+            );
+
+            try
+            {
+                await _liveSession.ConnectAsync(apiKey, MicrophoneRecorder.TargetStreamingSampleRate, ct);
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[RhymeInputController] gpt-live-transcribe 接続エラー: {ex.Message}");
+                if (_rhymeInputField != null)
+                {
+                    _rhymeInputField.text = "[接続エラー]";
+                }
+            }
+        }
+
+        private async UniTaskVoid FinishFileTranscriptionAsync(CancellationToken ct)
+        {
+            _isTranscribing = true;
+            if (_rhymeInputField != null)
+            {
+                _rhymeInputField.text = "[文字起こし中...]";
+            }
+
+            try
+            {
+                float[] samples = _microphoneRecorder.EndVoiceCapture();
+                if (samples == null || samples.Length == 0)
+                {
+                    ClearInputField();
+                    return;
+                }
+
+                byte[] wavBytes = AudioClipToWav.EncodeToWav(samples, _microphoneRecorder.Channels, _microphoneRecorder.SampleRate);
+                string apiKey = GetOpenAiApiKey();
+
+                if (string.IsNullOrWhiteSpace(apiKey))
+                {
+                    Debug.LogError($"[RhymeInputController] 環境変数 '{_apiKeyEnvironmentVariable}' が設定されていません．");
+                    if (_rhymeInputField != null)
+                    {
+                        _rhymeInputField.text = "[APIキー未設定]";
+                    }
+                    return;
+                }
+
+                string recognizedText = await OpenAiVoiceClient.TranscribeAudioAsync(
+                    wavBytes,
+                    apiKey,
+                    model: "gpt-transcribe",
+                    language: "ja",
+                    ct: ct);
+
+                HandleRecognizedText(recognizedText);
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[RhymeInputController] gpt-transcribe エラー: {ex}");
+                if (_rhymeInputField != null)
+                {
+                    _rhymeInputField.text = "[認識エラー]";
+                }
+            }
+            finally
+            {
+                _isTranscribing = false;
+                ClearInputField();
+            }
+        }
+
+        private async UniTaskVoid FinishLiveTranscriptionAsync(CancellationToken ct)
+        {
+            _isTranscribing = true;
+            try
+            {
+                if (_liveSession != null)
+                {
+                    byte[] remainingPcm = _microphoneRecorder.GetNewAudioPcmChunk();
+                    if (remainingPcm != null && remainingPcm.Length > 0)
+                    {
+                        await _liveSession.SendAudioChunkAsync(remainingPcm, ct);
+                    }
+
+                    string resultText = await _liveSession.CommitAudioAndWaitResultAsync(timeoutSec: 3.0f, ct: ct);
+                    HandleRecognizedText(resultText);
+                }
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[RhymeInputController] gpt-live-transcribe エラー: {ex}");
+            }
+            finally
+            {
+                _microphoneRecorder.EndVoiceCapture();
+                _isTranscribing = false;
+                ClearInputField();
+            }
+        }
+
+        private void HandleRecognizedText(string rawText)
+        {
+            if (string.IsNullOrWhiteSpace(rawText))
+            {
+                return;
+            }
+
+            string[] tokens = rawText.Split(new[] { ' ', '　', '\n', '\r', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (string token in tokens)
+            {
+                string sanitized = SanitizeText(token);
+                if (!string.IsNullOrWhiteSpace(sanitized))
+                {
+                    TryAddRhyme(sanitized);
+                }
+            }
+        }
+
+        private static string SanitizeText(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return string.Empty;
+
+            var sb = new StringBuilder();
+            for (int i = 0; i < text.Length; i++)
+            {
+                char c = text[i];
+                if (char.IsPunctuation(c) || char.IsSymbol(c) || char.IsWhiteSpace(c))
+                {
+                    continue;
+                }
+                sb.Append(c);
+            }
+            return sb.ToString().Trim();
+        }
+
+        private void CancelVoiceInput()
+        {
+            _isVoiceRecording = false;
+            _isTranscribing = false;
+
+            _voiceCts?.Cancel();
+            _voiceCts?.Dispose();
+            _voiceCts = null;
+
+            _microphoneRecorder.StopStandby();
+            DisposeLiveSession();
+        }
+
+        private void DisposeLiveSession()
+        {
+            if (_liveSession != null)
+            {
+                _liveSession.Dispose();
+                _liveSession = null;
+            }
+        }
+
+        private string GetOpenAiApiKey()
+        {
+            string varName = string.IsNullOrWhiteSpace(_apiKeyEnvironmentVariable)
+                ? "OPENAI_API_KEY"
+                : _apiKeyEnvironmentVariable;
+
+            string key = Environment.GetEnvironmentVariable(varName);
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                key = Environment.GetEnvironmentVariable(varName, EnvironmentVariableTarget.User);
+            }
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                key = Environment.GetEnvironmentVariable(varName, EnvironmentVariableTarget.Machine);
+            }
+            return key;
+        }
+
+        private bool GetSpaceKeyDown()
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (UnityEngine.InputSystem.Keyboard.current != null)
+            {
+                return UnityEngine.InputSystem.Keyboard.current.spaceKey.wasPressedThisFrame;
+            }
+#endif
+            return UnityEngine.Input.GetKeyDown(KeyCode.Space);
+        }
+
+        private bool GetSpaceKey()
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (UnityEngine.InputSystem.Keyboard.current != null)
+            {
+                return UnityEngine.InputSystem.Keyboard.current.spaceKey.isPressed;
+            }
+#endif
+            return UnityEngine.Input.GetKey(KeyCode.Space);
+        }
+
+        private bool GetSpaceKeyUp()
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (UnityEngine.InputSystem.Keyboard.current != null)
+            {
+                return UnityEngine.InputSystem.Keyboard.current.spaceKey.wasReleasedThisFrame;
+            }
+#endif
+            return UnityEngine.Input.GetKeyUp(KeyCode.Space);
+        }
+        #endregion
+
         private void HandleInputSubmitted(string word)
         {
+            if (_useVoiceInput)
+            {
+                return;
+            }
             TryAddRhyme(word);
         }
 
@@ -294,6 +710,10 @@ namespace RhAImers.Input
 
         private void HandleInputEnded(string word)
         {
+            if (_useVoiceInput)
+            {
+                return;
+            }
             TryAddRhyme(word);
         }
 
@@ -304,7 +724,7 @@ namespace RhAImers.Input
 
         private void AddCurrentInputText()
         {
-            if (_rhymeInputField == null)
+            if (_useVoiceInput || _rhymeInputField == null)
             {
                 return;
             }
@@ -316,8 +736,8 @@ namespace RhAImers.Input
         {
             if (!_allowInput || string.IsNullOrWhiteSpace(word))
             {
-                _uiManager.ShowRhymeInvalidInputVibration().Forget();   // TODO: キャンセル処理諸々ちゃんと考える
-                RequestFocusInputFieldNextFrame();
+                _uiManager?.ShowRhymeInvalidInputVibration().Forget();   // TODO: キャンセル処理諸々ちゃんと考える
+                if (!_useVoiceInput) RequestFocusInputFieldNextFrame();
                 return;
             }
 
@@ -325,16 +745,16 @@ namespace RhAImers.Input
 
             if (_lastAddedFrame == Time.frameCount && _lastAddedWord == trimmedWord)
             {
-                _uiManager.ShowRhymeInvalidInputVibration().Forget();   // TODO: キャンセル処理諸々ちゃんと考える
-                RequestFocusInputFieldNextFrame();
+                _uiManager?.ShowRhymeInvalidInputVibration().Forget();   // TODO: キャンセル処理諸々ちゃんと考える
+                if (!_useVoiceInput) RequestFocusInputFieldNextFrame();
                 return;
             }
 
             // 2026/07/11 ADD アルファベットが含まれる場合は除去
             if (!IsNonAlphabeticLettersOnly(trimmedWord))
             {
-                _uiManager.ShowRhymeInvalidInputVibration().Forget();   // TODO: キャンセル処理諸々ちゃんと考える
-                RequestFocusInputFieldNextFrame();
+                _uiManager?.ShowRhymeInvalidInputVibration().Forget();   // TODO: キャンセル処理諸々ちゃんと考える
+                if (!_useVoiceInput) RequestFocusInputFieldNextFrame();
                 return;
             }
 
@@ -353,7 +773,7 @@ namespace RhAImers.Input
 
             ClearInputField();
 
-            if (_refocusInputAfterAdd)
+            if (!_useVoiceInput && _refocusInputAfterAdd)
             {
                 RequestFocusInputFieldNextFrame();
             }
@@ -382,7 +802,7 @@ namespace RhAImers.Input
 
         private void RequestFocusInputFieldNextFrame()
         {
-            if (!_allowInput || _rhymeInputField == null)
+            if (_useVoiceInput || !_allowInput || _rhymeInputField == null)
             {
                 return;
             }
@@ -395,7 +815,7 @@ namespace RhAImers.Input
         {
             yield return null;
 
-            if (_allowInput)
+            if (_allowInput && !_useVoiceInput)
             {
                 FocusInputField();
             }
@@ -405,7 +825,7 @@ namespace RhAImers.Input
 
         private void FocusInputField()
         {
-            if (_rhymeInputField == null || !_rhymeInputField.interactable)
+            if (_useVoiceInput || _rhymeInputField == null || !_rhymeInputField.interactable)
             {
                 return;
             }
